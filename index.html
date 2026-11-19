@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="graphite">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingeniería · Control de Procedimientos y Alcance</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2323272E'/><path d='M26 68V46M50 68V30M74 68V52' stroke='%234E9F78' stroke-width='10' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=E5n3jeb2FRM7dIJMj4GNN53jbAst2GONFROl0WT9Uygt43X09lZuI5ims4fIgp6XHp-ihJf8ipyEjdTjw4sMI0Vl7qNuWpuGj13Epd4vPiJehgilcws_tijYoKua2Sr0v8gw1AGuLfiYklhSC_KhY_hul9ezROPnmI80MQt5wLJc69PP9tL6k_FSqD0Xb7EB5IQOUILHiLMKpn5dKX69V0TtotUsWM54AcVNe9r3b-ipbE-RdynLmBCu4Baw8w06st3fIX4jNFdqO9gJrIcsvs19hD4qlLL4Zz35WqETWToDbKz30Qt66UfuaMdnwwAJ" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS — LOW-GLARE ARCHITECTURAL PALETTE (GRAFITO & PAPEL CÁLIDO)
+       ========================================================================== */
+    :root,
+    [data-theme="graphite"] {
+      --bg-canvas: #131518;
+      --bg-surface: #1B1E23;
+      --bg-elevated: #23272E;
+      --bg-hover: #292E37;
+      --bg-topbar: rgba(27, 30, 35, 0.92);
+
+      --border-hairline: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      --ink-primary: #EFECE6;
+      --ink-secondary: #989EA8;
+      --ink-muted: #686E78;
+
+      /* Pigmentos ergonómicos desaturados (sin neón ni fatiga visual) */
+      --tone-sage: #4E9F78;
+      --tone-sage-soft: rgba(78, 159, 120, 0.14);
+      --tone-ochre: #D4963B;
+      --tone-ochre-soft: rgba(212, 150, 59, 0.15);
+      --tone-terracotta: #D16052;
+      --tone-terracotta-soft: rgba(209, 96, 82, 0.14);
+      --tone-steel: #5B84B1;
+      --tone-steel-soft: rgba(91, 132, 177, 0.15);
+      --tone-neutral: #7E8591;
+      --tone-neutral-soft: rgba(126, 133, 145, 0.14);
+
+      --accent-primary: #EFECE6;
+      --accent-primary-ink: #131518;
+
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 24px -12px rgba(0, 0, 0, 0.45);
+      --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.55);
+      --chart-grid: rgba(255, 255, 255, 0.06);
+      --chart-label: #989EA8;
+      --chart-ink: #EFECE6;
+    }
+
+    [data-theme="paper"] {
+      --bg-canvas: #F5F4F0;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #ECEAE3;
+      --bg-hover: #F2F0EA;
+      --bg-topbar: rgba(255, 255, 255, 0.92);
+
+      --border-hairline: #E3E0D8;
+      --border-strong: #CEC9BE;
+
+      --ink-primary: #1B1D21;
+      --ink-secondary: #5B606A;
+      --ink-muted: #8A909A;
+
+      --tone-sage: #2E7D5B;
+      --tone-sage-soft: rgba(46, 125, 91, 0.11);
+      --tone-ochre: #B5761E;
+      --tone-ochre-soft: rgba(181, 118, 30, 0.12);
+      --tone-terracotta: #C2493B;
+      --tone-terracotta-soft: rgba(194, 73, 59, 0.10);
+      --tone-steel: #3B6998;
+      --tone-steel-soft: rgba(59, 105, 152, 0.11);
+      --tone-neutral: #686E78;
+      --tone-neutral-soft: rgba(104, 110, 120, 0.11);
+
+      --accent-primary: #1B1D21;
+      --accent-primary-ink: #FFFFFF;
+
+      --shadow-card: 0 1px 3px rgba(27, 29, 33, 0.05), 0 10px 26px -14px rgba(27, 29, 33, 0.12);
+      --shadow-drawer: -24px 0 60px rgba(27, 29, 33, 0.18);
+      --chart-grid: rgba(27, 29, 33, 0.07);
+      --chart-label: #5B606A;
+      --chart-ink: #1B1D21;
+    }
+
+    :root {
+      --space-xs: 6px;
+      --space-sm: 10px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition-fast: 0.16s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    /* ==========================================================================
+       2. RESET & BASE TYPOGRAPHY
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--ink-primary);
+      line-height: 1.45;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .tabular {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ==========================================================================
+       3. TOP WORKSPACE COMMAND BAR
+       ========================================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: var(--bg-topbar);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 12px 28px;
+    }
+
+    .topbar-inner {
+      max-width: 1460px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-id {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .workspace-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      color: var(--tone-sage);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .workspace-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+    }
+
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      font-size: 0.74rem;
+      color: var(--ink-secondary);
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--tone-sage);
+    }
+
+    .sync-dot.offline {
+      background: var(--tone-ochre);
+    }
+
+    .sync-refresh {
+      background: none;
+      border: none;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      font-size: 0.82rem;
+      padding: 0 2px;
+      transition: transform 0.2s ease, color 0.15s;
+    }
+
+    .sync-refresh:hover {
+      color: var(--ink-primary);
+      transform: rotate(90deg);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--accent-primary-ink);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      border-color: var(--border-strong);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-elevated);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-secondary);
+      border-color: var(--border-hairline);
+    }
+
+    .btn-ghost:hover {
+      color: var(--ink-primary);
+      background: var(--bg-elevated);
+    }
+
+    /* ==========================================================================
+       4. MAIN WORKSPACE CONTAINER & PROJECT PORTFOLIO STRIP
+       ========================================================================== */
+    .container {
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 22px 28px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .section-eyebrow {
+      font-size: 0.74rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-secondary);
+    }
+
+    .projects-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+      gap: 12px;
+    }
+
+    .project-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+
+    .project-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .project-card.active {
+      border-color: var(--tone-steel);
+      background: var(--bg-elevated);
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .ring-wrap svg {
+      transform: rotate(-90deg);
+      width: 48px;
+      height: 48px;
+    }
+
+    .ring-text {
+      position: absolute;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .project-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .project-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ink-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+
+    .project-stats {
+      font-size: 0.76rem;
+      color: var(--ink-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag-extra {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 0.69rem;
+      font-weight: 600;
+      background: var(--tone-terracotta-soft);
+      color: var(--tone-terracotta);
+    }
+
+    /* ==========================================================================
+       5. CONTEXTUAL FILTER & SEGMENTED TOOLBAR
+       ========================================================================== */
+    .filter-toolbar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .input-clean,
+    .select-clean {
+      height: 34px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-primary);
+      border-radius: var(--radius-sm);
+      padding: 0 11px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .input-clean {
+      min-width: 220px;
+    }
+
+    .input-clean:focus,
+    .select-clean:focus {
+      border-color: var(--tone-steel);
+    }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-size: 0.76rem;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition-fast);
+    }
+
+    .seg-btn.active {
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ==========================================================================
+       6. ANALYTICS BENTO GRID
+       ========================================================================== */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 7fr 5fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 1080px) {
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ink-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .card-desc {
+      font-size: 0.76rem;
+      color: var(--ink-secondary);
+      margin-top: 2px;
+    }
+
+    .chart-box {
+      width: 100%;
+      height: 245px;
+    }
+
+    /* ==========================================================================
+       7. INTERACTIVE PROCEDURE WORKBENCH TABLE
+       ========================================================================== */
+    .workbench-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+
+    .workbench-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .summary-strip {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 0.78rem;
+      color: var(--ink-secondary);
+      flex-wrap: wrap;
+    }
+
+    .summary-strip strong {
+      color: var(--ink-primary);
+      font-weight: 600;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      padding: 11px 14px;
+      font-size: 0.71rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-secondary);
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-hairline);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 13px 14px;
+      font-size: 0.82rem;
+      border-bottom: 1px solid var(--border-hairline);
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: background-color var(--transition-fast);
+    }
+
+    tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    tbody tr.is-extra {
+      box-shadow: inset 3px 0 0 var(--tone-terracotta);
+    }
+
+    .proc-title {
+      font-weight: 500;
+      color: var(--ink-primary);
+      margin-bottom: 2px;
+    }
+
+    .proc-sub {
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+      line-height: 1.35;
+    }
+
+    /* Inline Status Select Pill */
+    .status-pill-select {
+      appearance: none;
+      -webkit-appearance: none;
+      border-radius: 999px;
+      padding: 4px 24px 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      outline: none;
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23989EA8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+      transition: all var(--transition-fast);
+    }
+
+    .status-Pendiente {
+      background-color: var(--tone-neutral-soft);
+      color: var(--tone-neutral);
+      border-color: rgba(126, 133, 145, 0.25);
+    }
+
+    .status-EnDesarrollo {
+      background-color: var(--tone-ochre-soft);
+      color: var(--tone-ochre);
+      border-color: rgba(212, 150, 59, 0.3);
+    }
+
+    .status-Pausado {
+      background-color: var(--tone-terracotta-soft);
+      color: var(--tone-terracotta);
+      border-color: rgba(209, 96, 82, 0.25);
+    }
+
+    .status-Terminado {
+      background-color: var(--tone-sage-soft);
+      color: var(--tone-sage);
+      border-color: rgba(78, 159, 120, 0.3);
+    }
+
+    /* Inline Editable Progress Slider + Input */
+    .progress-editor {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 165px;
+    }
+
+    .progress-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 96px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .progress-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--ink-primary);
+      border: 2px solid var(--tone-steel);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+
+    .progress-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+
+    .pct-box {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.76rem;
+      color: var(--ink-primary);
+    }
+
+    .pct-box input {
+      width: 34px;
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      font-weight: 600;
+      text-align: right;
+      outline: none;
+    }
+
+    .pct-box input::-webkit-inner-spin-button,
+    .pct-box input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .hours-cell {
+      white-space: nowrap;
+      font-size: 0.78rem;
+      color: var(--ink-secondary);
+    }
+
+    .hours-cell strong {
+      color: var(--ink-primary);
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-secondary);
+      font-size: 0.75rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .icon-btn:hover {
+      color: var(--ink-primary);
+      border-color: var(--border-strong);
+    }
+
+    .icon-btn.danger:hover {
+      color: var(--tone-terracotta);
+      border-color: var(--tone-terracotta);
+    }
+
+    /* ==========================================================================
+       8. SLIDE-OVER INSPECTOR DRAWER & TOAST FEEDBACK
+       ========================================================================== */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 15, 0.58);
+      backdrop-filter: blur(3px);
+      z-index: 200;
+      display: none;
+      justify-content: flex-end;
+    }
+
+    .drawer-overlay.open {
+      display: flex;
+    }
+
+    .drawer-panel {
+      width: 490px;
+      max-width: 100%;
+      height: 100%;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-strong);
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: var(--shadow-drawer);
+    }
+
+    .drawer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .drawer-top h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field.span-2 {
+      grid-column: span 2;
+    }
+
+    .field label {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--ink-secondary);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-primary);
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
+      font-size: 0.83rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--tone-steel);
+    }
+
+    .field textarea {
+      min-height: 68px;
+      resize: vertical;
+    }
+
+    .sync-hint {
+      grid-column: span 2;
+      background: var(--tone-steel-soft);
+      border: 1px solid rgba(91, 132, 177, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 24px;
+      z-index: 300;
+      background: var(--bg-elevated);
+      color: var(--ink-primary);
+      border: 1px solid var(--border-strong);
+      border-left: 3px solid var(--tone-sage);
+      padding: 11px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      box-shadow: var(--shadow-card);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.22s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.warn {
+      border-left-color: var(--tone-terracotta);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP COMMAND HEADER -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="workspace-id">
+        <div class="workspace-mark">ING</div>
+        <div>
+          <div class="workspace-title">Control de Procedimientos y Alcance</div>
+        </div>
+        <div class="sync-pill" id="syncPill">
+          <span class="sync-dot" id="syncDot"></span>
+          <span id="syncText">Sincronizado con Excel</span>
+          <button class="sync-refresh" title="Releer archivo Excel desde disco" onclick="loadData(true)">↻</button>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Modo Papel Cálido</button>
+        <a class="btn btn-secondary" href="/api/export" target="_blank">Exportar .xlsx</a>
+        <button class="btn btn-primary" onclick="openDrawer()">+ Nuevo Procedimiento</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 1. PORTAFOLIO DE PROYECTOS (PORCENTAJE PONDERADO EN VIVO) -->
+    <section>
+      <div class="section-label-row">
+        <span class="section-eyebrow">Avance Ponderado por Proyecto (Clic para filtrar)</span>
+        <span class="section-eyebrow tabular" id="globalSummaryTag">0 proyectos · 0h totales</span>
+      </div>
+      <div class="projects-strip" id="projectsStrip"></div>
+    </section>
+
+    <!-- 2. BARRA DE FILTROS CONTEXTUALES -->
+    <section class="filter-toolbar">
+      <div class="filter-controls">
+        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, ID o fase..." oninput="applyFilters()" />
+
+        <select id="fResponsable" class="select-clean" onchange="applyFilters()">
+          <option value="TODOS">Responsable: Todos</option>
+        </select>
+
+        <select id="fSolicitante" class="select-clean" onchange="applyFilters()">
+          <option value="TODOS">Solicitante: Todos</option>
+        </select>
+
+        <select id="fFase" class="select-clean" onchange="applyFilters()">
+          <option value="TODOS">Fase: Todas</option>
+        </select>
+
+        <select id="fEstado" class="select-clean" onchange="applyFilters()">
+          <option value="TODOS">Estado: Todos</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En Desarrollo">En Desarrollo</option>
+          <option value="Pausado">Pausado</option>
+          <option value="Terminado">Terminado</option>
+        </select>
+
+        <div class="segmented" role="group" aria-label="Filtro de alcance">
+          <button class="seg-btn active" data-scope="TODOS" onclick="setScopeFilter('TODOS')">Todos</button>
+          <button class="seg-btn" data-scope="No" onclick="setScopeFilter('No')">Plan Original</button>
+          <button class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios (+Tiempo)</button>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
+    </section>
+
+    <!-- 3. ANALÍTICA VISUAL -->
+    <section class="analytics-grid">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Horas Planeadas, Cambios de Alcance y Ejecución Real</h3>
+            <p class="card-desc">Evidencia visual del tiempo base frente a requerimientos nuevos agregados</p>
+          </div>
+          <div class="segmented">
+            <button class="seg-btn active" id="btnAxisProy" onclick="setBarAxis('Proyecto')">Por Proyecto</button>
+            <button class="seg-btn" id="btnAxisFase" onclick="setBarAxis('Fase_Etapa')">Por Fase</button>
+          </div>
+        </div>
+        <div id="chartHours" class="chart-box"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Distribución de Carga (Horas Estimadas)</h3>
+            <p class="card-desc">Clic en un segmento para filtrar el tablero</p>
+          </div>
+          <div class="segmented">
+            <button class="seg-btn active" id="btnDonutEmp" onclick="setDonutAxis('Responsable')">Empleado</button>
+            <button class="seg-btn" id="btnDonutSol" onclick="setDonutAxis('Solicitante')">Solicitante</button>
+          </div>
+        </div>
+        <div id="chartDistribution" class="chart-box"></div>
+      </article>
+    </section>
+
+    <!-- 4. MESA DE TRABAJO DE PROCEDIMIENTOS (EDICIÓN DIRECTA DE ESTADO Y %) -->
+    <section class="workbench-card">
+      <div class="workbench-header">
+        <div>
+          <h3 class="card-title">Procedimientos y Requerimientos</h3>
+          <p class="card-desc">Cambia el estado o ajusta el porcentaje directamente en la fila; se recalcula y guarda en Excel al instante</p>
+        </div>
+        <div class="summary-strip" id="tableSummaryStrip"></div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Proyecto · Fase</th>
+              <th>Procedimiento / Descripción</th>
+              <th>Solicita</th>
+              <th>Responsable</th>
+              <th>Estado (Auto-calcula %)</th>
+              <th>Avance del Procedimiento</th>
+              <th>Horas (Real / Est)</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- SLIDE-OVER DRAWER PARA CREAR / EDITAR DETALLE COMPLETO -->
+  <aside class="drawer-overlay" id="drawerOverlay" onclick="if(event.target===this) closeDrawer()">
+    <div class="drawer-panel">
+      <div class="drawer-top">
+        <h2 id="drawerTitle">Nuevo Procedimiento</h2>
+        <button class="btn btn-ghost" onclick="closeDrawer()">Cerrar</button>
+      </div>
+
+      <form id="procForm" onsubmit="submitDrawerForm(event)">
+        <input type="hidden" id="editIdReq" value="" />
+        <div class="form-grid">
+          <div class="field">
+            <label>Proyecto *</label>
+            <input type="text" id="inpProyecto" list="dlProyectos" required placeholder="Ej. T-LAB" />
+            <datalist id="dlProyectos"></datalist>
+          </div>
+
+          <div class="field">
+            <label>Fase / Etapa *</label>
+            <input type="text" id="inpFase" required placeholder="Ej. Etapa 2 - Método Directo" />
+          </div>
+
+          <div class="field">
+            <label>Quién Solicita (Área) *</label>
+            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Laboratorio" />
+            <datalist id="dlSolicitantes"></datalist>
+          </div>
+
+          <div class="field">
+            <label>Empleado Responsable *</label>
+            <input type="text" id="inpResponsable" list="dlResponsables" required placeholder="Ej. Samantha Moreno" />
+            <datalist id="dlResponsables"></datalist>
+          </div>
+
+          <div class="field span-2">
+            <label>Descripción Técnica del Procedimiento *</label>
+            <input type="text" id="inpDescripcion" required placeholder="Nombre claro de la tarea o procedimiento" />
+          </div>
+
+          <div class="field span-2">
+            <label>Detalle Explicativo (Lenguaje claro para Gerencia)</label>
+            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento y su impacto..."></textarea>
+          </div>
+
+          <div class="field">
+            <label>Tipo</label>
+            <select id="inpTipo">
+              <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
+              <option value="Mejora">Mejora</option>
+              <option value="Corrección">Corrección</option>
+              <option value="Soporte">Soporte</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>¿Alteró el tiempo inicial?</label>
+            <select id="inpAdicional">
+              <option value="No">No (Plan Original)</option>
+              <option value="Sí">Sí (Requerimiento Nuevo Extra)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Horas Estimadas *</label>
+            <input type="number" id="inpHorasEst" min="0" step="0.5" required value="8" />
+          </div>
+
+          <div class="field">
+            <label>Horas Reales Invertidas</label>
+            <input type="number" id="inpHorasReales" min="0" step="0.5" required value="0" />
+          </div>
+
+          <div class="field">
+            <label>Estado del Procedimiento</label>
+            <select id="inpEstado" onchange="onDrawerEstadoChange()">
+              <option value="Pendiente">Pendiente (0%)</option>
+              <option value="En Desarrollo">En Desarrollo (50%)</option>
+              <option value="Pausado">Pausado</option>
+              <option value="Terminado">Terminado (100%)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>% Avance (0 a 100%)</label>
+            <input type="number" id="inpAvance" min="0" max="100" step="1" required value="0" oninput="onDrawerAvanceChange()" />
+          </div>
+
+          <div class="sync-hint">
+            <span>El estado y el porcentaje se calculan automáticamente entre sí, y el avance global del proyecto se pondera por horas.</span>
+          </div>
+
+          <div class="field span-2">
+            <label>Aprobación</label>
+            <select id="inpAprobado">
+              <option value="Aprobado">Aprobado</option>
+              <option value="Pendiente">Pendiente de Aprobación</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn btn-ghost" onclick="closeDrawer()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar en Excel</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const FALLBACK_DATA = [
+      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Base de Datos", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Diseño del modelo relacional y creación física de tablas en SQL Server", Detalle: "Crear y configurar las tablas físicas en el servidor de base de datos para almacenar mediciones sin usar Excel.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 40, Horas_Reales: 38, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado" },
+      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Directo", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Motor de cálculo para calibración e incertidumbres (Directo)", Detalle: "Automatizar todos los cálculos matemáticos del método directo que antes se hacían en Excel.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 80, Horas_Reales: 65, Avance_Pct: 80, Estado: "En Desarrollo", Aprobado: "Aprobado" },
+      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Directo", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Vistas web interactivas con validación en tiempo real (Directo)", Detalle: "Pantallas intuitivas para que los técnicos ingresen mediciones del método directo sin errores.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 80, Horas_Reales: 40, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado" },
+      { ID_Req: "ING-004", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Certificados", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Generación automática del certificado PDF y envío a carpeta OPI", Detalle: "Ensamblar el certificado PDF y guardarlo automáticamente en la carpeta OPI en la nube.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 40, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Aprobado" },
+      { ID_Req: "ING-005", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Indirecto", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Motor de cálculo e incertidumbres (Método Indirecto)", Detalle: "Fórmulas matemáticas específicas del método indirecto.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 60, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Pendiente" },
+      { ID_Req: "ING-006", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Indirecto", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Vistas web interactivas (Método Indirecto)", Detalle: "Formularios web adaptados a las variables del método indirecto.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 60, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Pendiente" },
+      { ID_Req: "ING-007", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1 - Soporte Producción", Solicitante: "Comercial", Responsable: "Samantha Moreno", Descripcion: "Filtro adicional por lote OPI en panel comercial", Detalle: "Solicitud posterior al cierre de Etapa 1 para filtrar lotes de válvulas.", Tipo: "Mejora", Es_Adicional: "Sí", Horas_Est: 16, Horas_Reales: 18, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado" },
+      { ID_Req: "ING-008", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Certificados", Solicitante: "Gerencia", Responsable: "Samantha Moreno", Descripcion: "Comparativo histórico de calibraciones previas en PDF", Detalle: "Requerimiento nuevo fuera del alcance inicial para incluir gráfica histórica.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 24, Horas_Reales: 8, Avance_Pct: 30, Estado: "En Desarrollo", Aprobado: "Aprobado" },
+      { ID_Req: "ING-009", Proyecto: "Catálogo Válvulas", Fase_Etapa: "Fase 1 - Selección", Solicitante: "Ingeniería", Responsable: "Carlos Ramírez", Descripcion: "Validación de presiones máximas y mínimas por brida", Detalle: "Normalizar rangos de presión y temperatura en válvulas de control.", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 32, Horas_Reales: 30, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado" },
+      { ID_Req: "ING-010", Proyecto: "Catálogo Válvulas", Fase_Etapa: "Fase 2 - Reglas Técnicas", Solicitante: "Comercial", Responsable: "Andrés Gómez", Descripcion: "Inclusión de kits de reparación especiales fuera de estándar", Detalle: "Requerimiento agregado por comercial a mitad de fase para cotizar sellos especiales.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 20, Horas_Reales: 15, Avance_Pct: 75, Estado: "En Desarrollo", Aprobado: "Aprobado" },
+      { ID_Req: "ING-011", Proyecto: "Portal Corporativo", Fase_Etapa: "Fase 1 - Tarjetas QR", Solicitante: "Comercial", Responsable: "Samantha Moreno", Descripcion: "Actualización dinámica de contactos vCard y descarga de QR", Detalle: "Editar datos comerciales conservando el mismo código QR impreso.", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 24, Horas_Reales: 24, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado" }
+    ];
+
+    let allData = [];
+    let filteredData = [];
+    let selectedProject = "TODOS";
+    let selectedScope = "TODOS";
+    let barAxis = "Proyecto";
+    let donutAxis = "Responsable";
+    let isBackendConnected = false;
+    let chartHours = null;
+    let chartDistribution = null;
+
+    /* ==========================================================================
+       LÓGICA BIDIRECCIONAL: ESTADO <-> % AVANCE DEL PROCEDIMIENTO
+       ========================================================================== */
+    function computePctFromEstado(estado, currentPct) {
+      const pct = Number(currentPct || 0);
+      if (estado === "Pendiente") return 0;
+      if (estado === "Terminado") return 100;
+      if (estado === "En Desarrollo") {
+        return (pct <= 0 || pct >= 100) ? 50 : pct;
+      }
+      if (estado === "Pausado") {
+        return pct <= 0 ? 25 : pct;
+      }
+      return pct;
+    }
+
+    function computeEstadoFromPct(pct, currentEstado) {
+      const val = Math.max(0, Math.min(100, Number(pct || 0)));
+      if (val <= 0) return "Pendiente";
+      if (val >= 100) return "Terminado";
+      if (currentEstado === "Pendiente" || currentEstado === "Terminado") {
+        return "En Desarrollo";
+      }
+      return currentEstado || "En Desarrollo";
+    }
+
+    /* ==========================================================================
+       TEMA ERGONÓMICO (GRAFITO SUAVE / PAPEL CÁLIDO)
+       ========================================================================== */
+    function toggleTheme() {
+      const root = document.documentElement;
+      const next = root.getAttribute("data-theme") === "graphite" ? "paper" : "graphite";
+      root.setAttribute("data-theme", next);
+      localStorage.setItem("ing_bi_theme", next);
+      document.getElementById("themeBtn").textContent = next === "graphite" ? "Modo Papel Cálido" : "Modo Grafito";
+      renderCharts();
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem("ing_bi_theme") || "graphite";
+      document.documentElement.setAttribute("data-theme", saved);
+      document.getElementById("themeBtn").textContent = saved === "graphite" ? "Modo Papel Cálido" : "Modo Grafito";
+    }
+
+    function showToast(msg, isWarn = false) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = isWarn ? "toast warn show" : "toast show";
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => {
+        el.classList.remove("show");
+      }, 3400);
+    }
+
+    /* ==========================================================================
+       CARGA Y SINCRONIZACIÓN CON EXCEL (FASTAPI)
+       ========================================================================== */
+    async function loadData(manualRefresh = false) {
+      try {
+        const res = await fetch("/api/data");
+        if (!res.ok) throw new Error("No backend");
+        const json = await res.json();
+        allData = json.requerimientos || [];
+        isBackendConnected = true;
+
+        const dot = document.getElementById("syncDot");
+        dot.classList.remove("offline");
+        const modTime = json.file_info && json.file_info.last_modified
+          ? json.file_info.last_modified.split(" ")[1]
+          : "Activo";
+        document.getElementById("syncText").textContent = `Excel en disco · ${modTime}`;
+        if (manualRefresh) showToast("Datos recargados desde requerimientos_ingenieria.xlsx");
+      } catch (err) {
+        allData = [...FALLBACK_DATA];
+        isBackendConnected = false;
+        document.getElementById("syncDot").classList.add("offline");
+        document.getElementById("syncText").textContent = "Vista local (inicia python app.py para guardar)";
+      }
+      populateDropdowns();
+      applyFilters();
+    }
+
+    function uniqueValues(key) {
+      return [...new Set(allData.map(item => (item[key] || "").trim()).filter(Boolean))];
+    }
+
+    function populateSelect(id, values, prefix) {
+      const sel = document.getElementById(id);
+      const prev = sel.value || "TODOS";
+      sel.innerHTML = `<option value="TODOS">${prefix}: Todos</option>`;
+      values.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+      });
+      if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function populateDatalist(id, values) {
+      const dl = document.getElementById(id);
+      dl.innerHTML = "";
+      values.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        dl.appendChild(opt);
+      });
+    }
+
+    function populateDropdowns() {
+      const proyectos = uniqueValues("Proyecto");
+      const responsables = uniqueValues("Responsable");
+      const solicitantes = uniqueValues("Solicitante");
+      const fases = uniqueValues("Fase_Etapa");
+
+      populateSelect("fResponsable", responsables, "Responsable");
+      populateSelect("fSolicitante", solicitantes, "Solicitante");
+      populateSelect("fFase", fases, "Fase");
+
+      populateDatalist("dlProyectos", proyectos);
+      populateDatalist("dlResponsables", responsables);
+      populateDatalist("dlSolicitantes", solicitantes);
+    }
+
+    /* ==========================================================================
+       FILTRADO Y CÁLCULO PONDERADO DE PROYECTOS
+       ========================================================================== */
+    function selectProjectCard(projectName) {
+      selectedProject = selectedProject === projectName ? "TODOS" : projectName;
+      applyFilters();
+    }
+
+    function setScopeFilter(scopeVal) {
+      selectedScope = scopeVal;
+      document.querySelectorAll("[data-scope]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-scope") === scopeVal);
+      });
+      applyFilters();
+    }
+
+    function resetFilters() {
+      selectedProject = "TODOS";
+      selectedScope = "TODOS";
+      document.querySelectorAll("[data-scope]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-scope") === "TODOS");
+      });
+      document.getElementById("fResponsable").value = "TODOS";
+      document.getElementById("fSolicitante").value = "TODOS";
+      document.getElementById("fFase").value = "TODOS";
+      document.getElementById("fEstado").value = "TODOS";
+      document.getElementById("searchInput").value = "";
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const resp = document.getElementById("fResponsable").value;
+      const sol = document.getElementById("fSolicitante").value;
+      const fase = document.getElementById("fFase").value;
+      const est = document.getElementById("fEstado").value;
+      const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+
+      const hasActiveFilters = selectedProject !== "TODOS" || selectedScope !== "TODOS" ||
+        resp !== "TODOS" || sol !== "TODOS" || fase !== "TODOS" || est !== "TODOS" || q !== "";
+      document.getElementById("resetBtn").style.display = hasActiveFilters ? "inline-flex" : "none";
+
+      filteredData = allData.filter(r => {
+        if (selectedProject !== "TODOS" && r.Proyecto !== selectedProject) return false;
+        if (selectedScope !== "TODOS" && r.Es_Adicional !== selectedScope) return false;
+        if (resp !== "TODOS" && r.Responsable !== resp) return false;
+        if (sol !== "TODOS" && r.Solicitante !== sol) return false;
+        if (fase !== "TODOS" && r.Fase_Etapa !== fase) return false;
+        if (est !== "TODOS" && r.Estado !== est) return false;
+        if (q) {
+          const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle}`.toLowerCase();
+          if (!text.includes(q)) return false;
+        }
+        return true;
+      });
+
+      renderProjectStrip();
+      renderCharts();
+      renderTable();
+    }
+
+    function renderProjectStrip() {
+      const strip = document.getElementById("projectsStrip");
+      strip.innerHTML = "";
+
+      // Calcular métricas globales y por proyecto sobre allData (respetando filtros de persona/solicitante si existen)
+      const byProject = {};
+      let globalEst = 0;
+      let globalWeighted = 0;
+      let globalExtra = 0;
+
+      allData.forEach(r => {
+        const hEst = Number(r.Horas_Est || 0);
+        const pct = Number(r.Avance_Pct || 0);
+        const isExtra = r.Es_Adicional === "Sí";
+
+        globalEst += hEst;
+        globalWeighted += hEst * (pct / 100);
+        if (isExtra) globalExtra += hEst;
+
+        if (!byProject[r.Proyecto]) {
+          byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, count: 0 };
+        }
+        byProject[r.Proyecto].est += hEst;
+        byProject[r.Proyecto].weighted += hEst * (pct / 100);
+        if (isExtra) byProject[r.Proyecto].extra += hEst;
+        byProject[r.Proyecto].count += 1;
+      });
+
+      const globalPct = globalEst > 0 ? (globalWeighted / globalEst) * 100 : 0;
+      const projectNames = Object.keys(byProject);
+      document.getElementById("globalSummaryTag").textContent = `${projectNames.length} proyectos · ${globalEst}h totales`;
+
+      // Tarjeta "Todos los Proyectos"
+      strip.appendChild(createProjectCapsule({
+        key: "TODOS",
+        title: "Todos los Proyectos",
+        pct: globalPct,
+        hours: globalEst,
+        extraHours: globalExtra,
+        count: allData.length
+      }));
+
+      // Tarjetas individuales por proyecto
+      projectNames.forEach(name => {
+        const info = byProject[name];
+        const pct = info.est > 0 ? (info.weighted / info.est) * 100 : 0;
+        strip.appendChild(createProjectCapsule({
+          key: name,
+          title: name,
+          pct,
+          hours: info.est,
+          extraHours: info.extra,
+          count: info.count
+        }));
+      });
+    }
+
+    function createProjectCapsule({ key, title, pct, hours, extraHours, count }) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "project-card" + (selectedProject === key ? " active" : "");
+      btn.onclick = () => selectProjectCard(key);
+
+      const radius = 19;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference;
+      const strokeColor = pct >= 100 ? "var(--tone-sage)" : pct > 0 ? "var(--tone-steel)" : "var(--tone-neutral)";
+
+      const extraBadge = extraHours > 0
+        ? `<span class="tag-extra">+${extraHours}h cambios</span>`
+        : "";
+
+      btn.innerHTML = `
+        <div class="ring-wrap">
+          <svg viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="${radius}" fill="none" stroke="var(--border-strong)" stroke-width="4" />
+            <circle cx="24" cy="24" r="${radius}" fill="none" stroke="${strokeColor}" stroke-width="4"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
+          </svg>
+          <span class="ring-text tabular">${Math.round(pct)}%</span>
+        </div>
+        <div class="project-info">
+          <div class="project-name" title="${title}">${title}</div>
+          <div class="project-stats">
+            <span class="tabular"><strong>${pct.toFixed(1)}%</strong></span>
+            <span>·</span>
+            <span class="tabular">${hours}h</span>
+            <span>·</span>
+            <span>${count} proc.</span>
+            ${extraBadge}
+          </div>
+        </div>
+      `;
+      return btn;
+    }
+
+    /* ==========================================================================
+       GRÁFICOS ECHARTS (PALETA SOBRIA Y ERGONOMÍA VISUAL)
+       ========================================================================== */
+    function setBarAxis(axis) {
+      barAxis = axis;
+      document.getElementById("btnAxisProy").classList.toggle("active", axis === "Proyecto");
+      document.getElementById("btnAxisFase").classList.toggle("active", axis === "Fase_Etapa");
+      renderCharts();
+    }
+
+    function setDonutAxis(axis) {
+      donutAxis = axis;
+      document.getElementById("btnDonutEmp").classList.toggle("active", axis === "Responsable");
+      document.getElementById("btnDonutSol").classList.toggle("active", axis === "Solicitante");
+      renderCharts();
+    }
+
+    function getCssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function initCharts() {
+      chartHours = echarts.init(document.getElementById("chartHours"));
+      chartDistribution = echarts.init(document.getElementById("chartDistribution"));
+
+      chartHours.on("click", params => {
+        if (barAxis === "Proyecto") {
+          selectProjectCard(params.name);
+        } else {
+          const sel = document.getElementById("fFase");
+          sel.value = sel.value === params.name ? "TODOS" : params.name;
+          applyFilters();
+        }
+      });
+
+      chartDistribution.on("click", params => {
+        const targetId = donutAxis === "Responsable" ? "fResponsable" : "fSolicitante";
+        const sel = document.getElementById(targetId);
+        sel.value = sel.value === params.name ? "TODOS" : params.name;
+        applyFilters();
+      });
+
+      window.addEventListener("resize", () => {
+        if (chartHours) chartHours.resize();
+        if (chartDistribution) chartDistribution.resize();
+      });
+    }
+
+    function renderCharts() {
+      if (!chartHours) initCharts();
+
+      const gridColor = getCssVar("--chart-grid");
+      const labelColor = getCssVar("--chart-label");
+      const inkColor = getCssVar("--chart-ink");
+      const steel = getCssVar("--tone-steel");
+      const terracotta = getCssVar("--tone-terracotta");
+      const sage = getCssVar("--tone-sage");
+      const ochre = getCssVar("--tone-ochre");
+
+      // 1. Barras: Plan Original + Cambios Extra vs Horas Reales
+      const groupMap = {};
+      filteredData.forEach(r => {
+        const key = r[barAxis] || "Sin definir";
+        if (!groupMap[key]) groupMap[key] = { orig: 0, extra: 0, real: 0 };
+        const est = Number(r.Horas_Est || 0);
+        const real = Number(r.Horas_Reales || 0);
+        if (r.Es_Adicional === "Sí") groupMap[key].extra += est;
+        else groupMap[key].orig += est;
+        groupMap[key].real += real;
+      });
+
+      const categories = Object.keys(groupMap);
+      chartHours.setOption({
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" }
+        },
+        legend: {
+          top: 0,
+          right: 0,
+          textStyle: { color: labelColor, fontSize: 11 }
+        },
+        grid: { left: 12, right: 16, top: 38, bottom: 12, containLabel: true },
+        xAxis: {
+          type: "category",
+          data: categories,
+          axisLine: { lineStyle: { color: gridColor } },
+          axisLabel: {
+            color: labelColor,
+            fontSize: 11,
+            interval: 0,
+            rotate: categories.length > 4 ? 16 : 0
+          }
+        },
+        yAxis: {
+          type: "value",
+          axisLabel: { color: labelColor, fontSize: 11, formatter: "{value}h" },
+          splitLine: { lineStyle: { color: gridColor, type: "dashed" } }
+        },
+        series: [
+          {
+            name: "Plan Base (Est.)",
+            type: "bar",
+            stack: "estimado",
+            barMaxWidth: 26,
+            data: categories.map(k => groupMap[k].orig),
+            itemStyle: { color: steel }
+          },
+          {
+            name: "Cambios Extra (Est.)",
+            type: "bar",
+            stack: "estimado",
+            barMaxWidth: 26,
+            data: categories.map(k => groupMap[k].extra),
+            itemStyle: { color: terracotta, borderRadius: [4, 4, 0, 0] }
+          },
+          {
+            name: "Horas Reales",
+            type: "bar",
+            barMaxWidth: 22,
+            data: categories.map(k => groupMap[k].real),
+            itemStyle: { color: sage, borderRadius: [4, 4, 0, 0] }
+          }
+        ]
+      }, true);
+
+      // 2. Donut: Distribución por Empleado o Solicitante
+      const distMap = {};
+      let totalDistHours = 0;
+      filteredData.forEach(r => {
+        const key = r[donutAxis] || "Sin asignar";
+        const h = Number(r.Horas_Est || 0);
+        distMap[key] = (distMap[key] || 0) + h;
+        totalDistHours += h;
+      });
+
+      const pieData = Object.keys(distMap).map(k => ({ name: k, value: distMap[k] }));
+      chartDistribution.setOption({
+        tooltip: {
+          trigger: "item",
+          formatter: "{b}: <b>{c}h</b> ({d}%)"
+        },
+        legend: {
+          bottom: 0,
+          textStyle: { color: labelColor, fontSize: 11 }
+        },
+        color: [steel, sage, ochre, terracotta, "#7E8591"],
+        series: [{
+          type: "pie",
+          radius: ["52%", "74%"],
+          center: ["50%", "43%"],
+          avoidLabelOverlap: true,
+          itemStyle: {
+            borderRadius: 5,
+            borderColor: getCssVar("--bg-surface"),
+            borderWidth: 2
+          },
+          label: {
+            color: inkColor,
+            fontSize: 11,
+            formatter: "{b} ({c}h)"
+          },
+          data: pieData
+        }],
+        graphic: [{
+          type: "text",
+          left: "center",
+          top: "39%",
+          style: {
+            text: `${totalDistHours}h`,
+            fill: inkColor,
+            font: "600 18px 'JetBrains Mono', monospace",
+            textAlign: "center"
+          }
+        }]
+      }, true);
+    }
+
+    /* ==========================================================================
+       TABLA INTERACTIVA CON EDICIÓN DIRECTA DE ESTADO Y %
+       ========================================================================== */
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      const totEst = filteredData.reduce((s, r) => s + Number(r.Horas_Est || 0), 0);
+      const totReal = filteredData.reduce((s, r) => s + Number(r.Horas_Reales || 0), 0);
+      const totExtra = filteredData.filter(r => r.Es_Adicional === "Sí").reduce((s, r) => s + Number(r.Horas_Est || 0), 0);
+      const weighted = filteredData.reduce((s, r) => s + (Number(r.Horas_Est || 0) * (Number(r.Avance_Pct || 0) / 100)), 0);
+      const viewPct = totEst > 0 ? (weighted / totEst) * 100 : 0;
+
+      document.getElementById("tableSummaryStrip").innerHTML = `
+        <span>Mostrando <strong>${filteredData.length}</strong> procedimientos</span>
+        <span>Avance vista: <strong class="tabular">${viewPct.toFixed(1)}%</strong></span>
+        <span>Horas: <strong class="tabular">${totReal}h / ${totEst}h</strong></span>
+        ${totExtra > 0 ? `<span class="tag-extra tabular">+${totExtra}h por cambios</span>` : ""}
+      `;
+
+      filteredData.forEach(r => {
+        const tr = document.createElement("tr");
+        if (r.Es_Adicional === "Sí") tr.classList.add("is-extra");
+
+        const statusClass = "status-" + (r.Estado || "Pendiente").replace(/\s+/g, "");
+        const extraTag = r.Es_Adicional === "Sí"
+          ? `<span class="tag-extra" style="margin-left:6px;">+${r.Horas_Est}h extra</span>`
+          : "";
+
+        tr.innerHTML = `
+          <td class="tabular" style="font-weight:600; color:var(--tone-steel);">${r.ID_Req}</td>
+          <td>
+            <div style="font-weight:600; color:var(--ink-primary);">${r.Proyecto}</div>
+            <div class="proc-sub">${r.Fase_Etapa}</div>
+          </td>
+          <td style="max-width:340px;">
+            <div class="proc-title">${r.Descripcion}${extraTag}</div>
+            <div class="proc-sub">${r.Detalle || ""}</div>
+          </td>
+          <td>${r.Solicitante}</td>
+          <td style="font-weight:500;">${r.Responsable}</td>
+          <td>
+            <select class="status-pill-select ${statusClass}" aria-label="Estado ${r.ID_Req}"
+              onchange="handleInlineEstadoChange('${r.ID_Req}', this.value)">
+              <option value="Pendiente" ${r.Estado === "Pendiente" ? "selected" : ""}>Pendiente</option>
+              <option value="En Desarrollo" ${r.Estado === "En Desarrollo" ? "selected" : ""}>En Desarrollo</option>
+              <option value="Pausado" ${r.Estado === "Pausado" ? "selected" : ""}>Pausado</option>
+              <option value="Terminado" ${r.Estado === "Terminado" ? "selected" : ""}>Terminado</option>
+            </select>
+          </td>
+          <td>
+            <div class="progress-editor">
+              <input type="range" class="progress-slider" min="0" max="100" step="5"
+                value="${r.Avance_Pct}"
+                oninput="previewSliderPct('${r.ID_Req}', this.value)"
+                onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />
+              <span class="pct-box">
+                <input type="number" id="pct-num-${r.ID_Req}" min="0" max="100" step="1"
+                  value="${Math.round(r.Avance_Pct)}"
+                  onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />%
+              </span>
+            </div>
+          </td>
+          <td class="hours-cell tabular">
+            <strong>${r.Horas_Reales}h</strong> / ${r.Horas_Est}h
+          </td>
+          <td>
+            <div class="row-actions">
+              <button class="icon-btn" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
+              <button class="icon-btn danger" title="Eliminar" onclick="deleteProc('${r.ID_Req}')">✕</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function previewSliderPct(idReq, val) {
+      const box = document.getElementById(`pct-num-${idReq}`);
+      if (box) box.value = val;
+    }
+
+    async function handleInlineEstadoChange(idReq, nuevoEstado) {
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+
+      const nuevoPct = computePctFromEstado(nuevoEstado, item.Avance_Pct);
+      item.Estado = nuevoEstado;
+      item.Avance_Pct = nuevoPct;
+      applyFilters();
+
+      await persistInlineProgress(idReq, { Estado: nuevoEstado });
+    }
+
+    async function handleInlineAvanceChange(idReq, rawVal) {
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+
+      const nuevoPct = Math.max(0, Math.min(100, Number(rawVal || 0)));
+      const nuevoEstado = computeEstadoFromPct(nuevoPct, item.Estado);
+      item.Avance_Pct = nuevoPct;
+      item.Estado = nuevoEstado;
+      applyFilters();
+
+      await persistInlineProgress(idReq, { Avance_Pct: nuevoPct });
+    }
+
+    async function persistInlineProgress(idReq, patchPayload) {
+      if (!isBackendConnected) {
+        showToast(`${idReq}: actualizado en vista local (inicia app.py para guardar en Excel)`, true);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/requerimientos/${idReq}/progreso`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patchPayload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || "No se pudo guardar en Excel", true);
+          await loadData(false);
+          return;
+        }
+        if (data.file_info && data.file_info.last_modified) {
+          document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
+        }
+        showToast(`${idReq} actualizado (${data.Estado} · ${data.Avance_Pct}%) en Excel`);
+      } catch (e) {
+        showToast("Error de conexión al guardar en Excel", true);
+      }
+    }
+
+    /* ==========================================================================
+       SLIDE-OVER DRAWER (CREAR / EDITAR PROCEDIMIENTO COMPLETO)
+       ========================================================================== */
+    function onDrawerEstadoChange() {
+      const est = document.getElementById("inpEstado").value;
+      const currentPct = document.getElementById("inpAvance").value;
+      document.getElementById("inpAvance").value = computePctFromEstado(est, currentPct);
+    }
+
+    function onDrawerAvanceChange() {
+      const pct = document.getElementById("inpAvance").value;
+      const currentEst = document.getElementById("inpEstado").value;
+      document.getElementById("inpEstado").value = computeEstadoFromPct(pct, currentEst);
+    }
+
+    function openDrawer(req = null) {
+      document.getElementById("drawerOverlay").classList.add("open");
+      if (req) {
+        document.getElementById("drawerTitle").textContent = `Editar ${req.ID_Req}`;
+        document.getElementById("editIdReq").value = req.ID_Req;
+        document.getElementById("inpProyecto").value = req.Proyecto;
+        document.getElementById("inpFase").value = req.Fase_Etapa;
+        document.getElementById("inpSolicitante").value = req.Solicitante;
+        document.getElementById("inpResponsable").value = req.Responsable;
+        document.getElementById("inpDescripcion").value = req.Descripcion;
+        document.getElementById("inpDetalle").value = req.Detalle || "";
+        document.getElementById("inpTipo").value = req.Tipo;
+        document.getElementById("inpAdicional").value = req.Es_Adicional;
+        document.getElementById("inpHorasEst").value = req.Horas_Est;
+        document.getElementById("inpHorasReales").value = req.Horas_Reales;
+        document.getElementById("inpEstado").value = req.Estado;
+        document.getElementById("inpAvance").value = req.Avance_Pct;
+        document.getElementById("inpAprobado").value = req.Aprobado || "Aprobado";
+      } else {
+        document.getElementById("drawerTitle").textContent = "Nuevo Procedimiento";
+        document.getElementById("editIdReq").value = "";
+        document.getElementById("procForm").reset();
+        document.getElementById("inpEstado").value = "Pendiente";
+        document.getElementById("inpAvance").value = 0;
+      }
+    }
+
+    function openEditDrawer(idReq) {
+      const found = allData.find(r => r.ID_Req === idReq);
+      if (found) openDrawer(found);
+    }
+
+    function closeDrawer() {
+      document.getElementById("drawerOverlay").classList.remove("open");
+    }
+
+    async function submitDrawerForm(e) {
+      e.preventDefault();
+      const editId = document.getElementById("editIdReq").value;
+      const payload = {
+        Proyecto: document.getElementById("inpProyecto").value,
+        Fase_Etapa: document.getElementById("inpFase").value,
+        Solicitante: document.getElementById("inpSolicitante").value,
+        Responsable: document.getElementById("inpResponsable").value,
+        Descripcion: document.getElementById("inpDescripcion").value,
+        Detalle: document.getElementById("inpDetalle").value,
+        Tipo: document.getElementById("inpTipo").value,
+        Es_Adicional: document.getElementById("inpAdicional").value,
+        Horas_Est: Number(document.getElementById("inpHorasEst").value || 0),
+        Horas_Reales: Number(document.getElementById("inpHorasReales").value || 0),
+        Estado: document.getElementById("inpEstado").value,
+        Avance_Pct: Number(document.getElementById("inpAvance").value || 0),
+        Aprobado: document.getElementById("inpAprobado").value
+      };
+
+      if (!isBackendConnected) {
+        if (editId) {
+          const idx = allData.findIndex(r => r.ID_Req === editId);
+          if (idx > -1) allData[idx] = { ...allData[idx], ...payload };
+        } else {
+          const nextNum = allData.length + 1;
+          allData.push({ ID_Req: `ING-${String(nextNum).padStart(3, "0")}`, ...payload });
+        }
+        closeDrawer();
+        populateDropdowns();
+        applyFilters();
+        showToast("Guardado en memoria local (inicia app.py para escribir en disco)", true);
+        return;
+      }
+
+      const url = editId ? `/api/requerimientos/${editId}` : "/api/requerimientos";
+      const method = editId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        closeDrawer();
+        await loadData(false);
+        showToast(`${data.ID_Req || editId} guardado en requerimientos_ingenieria.xlsx`);
+      } else {
+        showToast(data.detail || "Error al guardar en Excel", true);
+      }
+    }
+
+    async function deleteProc(idReq) {
+      if (!confirm(`¿Eliminar ${idReq} del archivo Excel?`)) return;
+      if (!isBackendConnected) {
+        allData = allData.filter(r => r.ID_Req !== idReq);
+        populateDropdowns();
+        applyFilters();
+        return;
+      }
+      const res = await fetch(`/api/requerimientos/${idReq}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok) {
+        await loadData(false);
+        showToast(`${idReq} eliminado del Excel`);
+      } else {
+        showToast(data.detail || "No se pudo eliminar", true);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initTheme();
+      loadData(false);
+    });
+  </script>
+</body>
+</html>
