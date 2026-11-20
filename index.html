@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=TI5T0NWT5hTyxhIpABsUFbi6eAizUfN413Rv2nD5OSFs1pHnPH9PnJahZOK8yDJlCMgQZrpa-FCP3YPaParDVZlNZ9gPl_mH6yU47zbv-IVfPU7KqLpUhp25-bHP0XVtGGM5QGONZ1SUPRt-o8uCnHaEDYfBFwzIsKt8gX5VWGdJRLmz4BwTOejBUrr_QWakl3b0KtdaSV5UggPje1J1nYQk3iOIcGWGg3p-QgoyzJkTYz4FSTKLwBwIDd5CWBgoch3dXpxsVWQPmQy3EUrat0xvxoqyu3SIv48Aj3tcH0uI1TuwbBTwywC52K0Evsbm" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=lHlrXC776o3K8AeGpVuRu0hPq4ZWWCxGLUWJ4TJ-kstcEFzQ2thSSdVzncE8lEMU0O_KlAB-bLU2MvdWJ7Z88NP8BPJSqV0kUS_BmJZO4V-N_00yHghKG8baKWIeHMMKqy1hYHUtHw0jtpWtCiAMdcuxyOv7EgwYKVQ5YmxS3NpcnvR5xBmFDsQQnVWBxAlR8nCXaf19Rt-3TeGnSBcXTNb-U1xxS8Joim58TP3G7sAbjGPg1n8IEn7gSqr8cqE5NSUebdqAxri4asbeqk3byrLICC4iSXV74d-vzmaUFEPgReZBShwwwwacZzh1ucdC" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
        1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (GRAFITO & PAPEL CÁLIDO)
@@ -2083,15 +2083,36 @@
     }
 
     /* ==========================================================================
-       CARGA Y SINCRONIZACIÓN CON EXCEL
+       CARGA Y SINCRONIZACIÓN CON EXCEL + RESPALDO LOCALSTORAGE
        ========================================================================== */
+    const LOCAL_STORAGE_KEY = "ing_bi_local_items_v1";
+
+    function saveLocalBackup() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allData));
+      } catch (e) {}
+    }
+
+    function loadLocalBackup() {
+      try {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(FALLBACK_DATA));
+    }
+
     async function loadData(manualRefresh = false) {
       try {
-        const res = await fetch("/api/data");
+        const endpoint = manualRefresh ? "/api/data?pull=true" : "/api/data";
+        const res = await fetch(endpoint);
         if (!res.ok) throw new Error("No backend");
         const json = await res.json();
         allData = json.requerimientos || [];
         computeLocalCascade(allData);
+        saveLocalBackup();
         isBackendConnected = true;
 
         const dot = document.getElementById("syncDot");
@@ -2099,14 +2120,17 @@
         const modTime = json.file_info && json.file_info.last_modified
           ? json.file_info.last_modified.split(" ")[1]
           : "Activo";
-        document.getElementById("syncText").textContent = `Excel en disco · ${modTime}`;
-        if (manualRefresh) showToast("Cronograma y datos recargados desde Excel");
+        const ghState = json.file_info && json.file_info.github_sync === "synced"
+          ? "Nube GitHub"
+          : "Excel en disco";
+        document.getElementById("syncText").textContent = `${ghState} · ${modTime}`;
+        if (manualRefresh) showToast("Cronograma y datos sincronizados");
       } catch (err) {
-        allData = JSON.parse(JSON.stringify(FALLBACK_DATA));
+        allData = loadLocalBackup();
         computeLocalCascade(allData);
         isBackendConnected = false;
         document.getElementById("syncDot").classList.add("offline");
-        document.getElementById("syncText").textContent = "Vista local (inicia python app.py para guardar)";
+        document.getElementById("syncText").textContent = "Guardado en navegador (sin servidor activo)";
       }
       populateDropdowns();
       applyFilters();
@@ -2871,7 +2895,7 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        showToast(`${idReq}: demora externa (+${horasExt}h) guardada en vista local`, true);
+        saveLocalBackup(); showToast(`${idReq}: demora externa (+${horasExt}h) guardada en navegador`, true);
         return;
       }
 
@@ -2917,7 +2941,7 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        showToast(`${idReq} -> ${nuevaPrioridad}: fechas recalculadas con festivos`, true);
+        saveLocalBackup(); showToast(`${idReq} -> ${nuevaPrioridad}: guardado en navegador`, true);
         return;
       }
 
@@ -2977,7 +3001,7 @@
 
     async function persistInlineProgress(idReq, patchPayload, prevDates) {
       if (!isBackendConnected) {
-        showToast(`${idReq}: actualizado en vista local (inicia app.py para guardar)`, true);
+        saveLocalBackup(); showToast(`${idReq}: actualizado en navegador`, true);
         return;
       }
       try {
@@ -3100,7 +3124,7 @@
         closeDrawer();
         populateDropdowns();
         applyFilters();
-        showToast("Guardado en vista local (inicia app.py para escribir en disco)", true);
+        saveLocalBackup(); showToast("Procedimiento guardado en este navegador", true);
         return;
       }
 
@@ -3129,9 +3153,11 @@
       if (!isBackendConnected) {
         allData = allData.filter(r => r.ID_Req !== idReq);
         computeLocalCascade(allData);
+        saveLocalBackup();
         detectShiftedRows(prevDates);
         populateDropdowns();
         applyFilters();
+        showToast(`${idReq} eliminado del navegador`, true);
         return;
       }
       const res = await fetch(`/api/requerimientos/${idReq}`, { method: "DELETE" });

@@ -1,6 +1,10 @@
 import os
+import json
 import math
+import base64
 import threading
+import urllib.request
+import urllib.error
 from pathlib import Path
 from datetime import date, datetime, timedelta
 from typing import Optional
@@ -17,6 +21,12 @@ INDEX_FILE = BASE_DIR / "index.html"
 
 HORAS_POR_DIA = 8.0
 
+# Configuración opcional para persistencia permanente en GitHub (ideal para Render Free Tier)
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "morenomolinasamantha-wq/control-avance-ingenieria").strip()
+GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip()
+GITHUB_FILE_PATH = os.environ.get("GITHUB_FILE_PATH", "requerimientos_ingenieria.xlsx").strip()
+
 app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Demoras Externas")
 
 app.add_middleware(
@@ -27,6 +37,8 @@ app.add_middleware(
 )
 
 excel_lock = threading.Lock()
+github_sync_lock = threading.Lock()
+last_github_sync_status = "local_only" if not GITHUB_TOKEN else "pending"
 
 HEADERS = [
     "ID_Req", "Proyecto", "Fase_Etapa", "Solicitante", "Responsable",
@@ -73,13 +85,89 @@ class ExternalDelayPatchInput(BaseModel):
 
 
 # ==============================================================================
+# SINCRONIZACIÓN AUTOMÁTICA CON GITHUB (PERSISTENCIA EN LA NUBE SIN COSTO)
+# ==============================================================================
+def _github_api_request(method: str, url: str, payload: Optional[dict] = None) -> dict:
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "Ingenieria-BI-Sync",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+    data_bytes = None
+    if payload is not None:
+        headers["Content-Type"] = "application/json"
+        data_bytes = json.dumps(payload).encode("utf-8")
+
+    req = urllib.request.Request(url, data=data_bytes, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        raw = resp.read().decode("utf-8")
+        return json.loads(raw) if raw else {}
+
+
+def pull_excel_from_github() -> bool:
+    """Descarga la última versión del Excel desde GitHub al arrancar el servidor."""
+    global last_github_sync_status
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return False
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}?ref={GITHUB_BRANCH}"
+        info = _github_api_request("GET", url)
+        content_b64 = info.get("content", "")
+        if content_b64:
+            EXCEL_FILE.write_bytes(base64.b64decode(content_b64))
+            last_github_sync_status = "synced"
+            return True
+    except Exception as e:
+        last_github_sync_status = f"pull_error: {e}"
+    return False
+
+
+def push_excel_to_github():
+    """Sube el Excel actualizado a GitHub usando [skip ci] para no reiniciar Render."""
+    global last_github_sync_status
+    if not GITHUB_TOKEN or not GITHUB_REPO or not EXCEL_FILE.exists():
+        return
+    with github_sync_lock:
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}?ref={GITHUB_BRANCH}"
+            sha = None
+            try:
+                current = _github_api_request("GET", url)
+                sha = current.get("sha")
+            except urllib.error.HTTPError as he:
+                if he.code != 404:
+                    raise
+
+            encoded = base64.b64encode(EXCEL_FILE.read_bytes()).decode("ascii")
+            put_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+            body = {
+                "message": f"[skip ci] Actualizar {GITHUB_FILE_PATH} desde tablero web",
+                "content": encoded,
+                "branch": GITHUB_BRANCH
+            }
+            if sha:
+                body["sha"] = sha
+
+            _github_api_request("PUT", put_url, body)
+            last_github_sync_status = "synced"
+        except Exception as e:
+            last_github_sync_status = f"push_error: {e}"
+
+
+def trigger_async_github_sync():
+    if GITHUB_TOKEN and GITHUB_REPO:
+        t = threading.Thread(target=push_excel_to_github, daemon=True)
+        t.start()
+
+
+# ==============================================================================
 # CALENDARIO LABORAL COLOMBIA (FINES DE SEMANA + FESTIVOS LEY EMILIANI)
 # ==============================================================================
 _HOLIDAY_CACHE: dict[int, dict[date, str]] = {}
 
 
 def easter_sunday(year: int) -> date:
-    """Calcula el Domingo de Pascua usando el algoritmo de Meeus/Jones/Butcher."""
     a = year % 19
     b = year // 100
     c = year % 100
@@ -104,7 +192,6 @@ def next_monday(d: date) -> date:
 
 
 def get_colombia_holidays(year: int) -> dict[date, str]:
-    """Devuelve todos los festivos oficiales de Colombia para el año dado."""
     if year in _HOLIDAY_CACHE:
         return _HOLIDAY_CACHE[year]
     easter = easter_sunday(year)
@@ -133,7 +220,6 @@ def get_colombia_holidays(year: int) -> dict[date, str]:
 
 
 def is_working_day(d: date) -> bool:
-    """True si es día hábil en Colombia (no sábado, no domingo, no festivo)."""
     if d.weekday() >= 5:
         return False
     if d in get_colombia_holidays(d.year):
@@ -142,7 +228,6 @@ def is_working_day(d: date) -> bool:
 
 
 def add_working_days(start_date: date, working_days: int) -> date:
-    """Suma N días hábiles saltando fines de semana y festivos de Colombia."""
     current = start_date
     added = 0
     while added < working_days:
@@ -160,7 +245,6 @@ def next_working_day(d: date) -> date:
 
 
 def working_days_diff(d_base: date, d_new: date) -> int:
-    """Diferencia en días hábiles (sin fines de semana ni festivos) entre dos fechas."""
     if d_base == d_new:
         return 0
     step = 1 if d_new > d_base else -1
@@ -174,13 +258,6 @@ def working_days_diff(d_base: date, d_new: date) -> int:
 
 
 def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = None) -> list[dict]:
-    """
-    Calcula fechas por responsable saltando fines de semana y festivos de Colombia:
-    - Fecha_Base: orden natural de creación sin repriorizar.
-    - Fecha_Tentativa: cola ordenada por Prioridad ('1 - Urgente' -> '4 - Baja').
-    - Desplazamiento_Dias: días hábiles desplazados por cambios de prioridad.
-    - Fecha_Real_Entrega: Fecha_Tentativa + días hábiles por Horas_Demora_Externa.
-    """
     if anchor_date is None:
         anchor_date = date.today()
     while not is_working_day(anchor_date):
@@ -214,7 +291,6 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             if str(it.get("Estado", "")).strip() != "Terminado" and float(it.get("Avance_Pct", 0)) < 100
         ]
 
-        # 1. Cronograma base (orden natural ID_Req)
         base_sorted = sorted(active_items, key=lambda x: str(x.get("ID_Req", "")))
         cursor_base = anchor_date
         base_dates_map: dict[str, date] = {}
@@ -228,7 +304,6 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             base_dates_map[str(it["ID_Req"])] = end_d
             cursor_base = end_d
 
-        # 2. Cronograma priorizado en cascada + Demora Externa
         prio_sorted = sorted(
             active_items,
             key=lambda x: (str(x.get("Prioridad") or "3 - Normal"), str(x.get("ID_Req", "")))
@@ -257,7 +332,6 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
 
 
 def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "auto") -> tuple[str, float]:
-    """Sincroniza bidireccionalmente Estado y % Avance del procedimiento."""
     estado_clean = (estado or "Pendiente").strip()
     pct = max(0.0, min(100.0, float(avance or 0)))
 
@@ -287,7 +361,6 @@ def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "a
 
 
 def ensure_excel_exists():
-    """Verifica que el Excel exista y migra columnas nuevas sin alterar los datos reales."""
     if not EXCEL_FILE.exists():
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -327,7 +400,6 @@ def ensure_excel_exists():
 
 
 def style_row(ws, row_idx: int):
-    """Aplica formato limpio a una fila recién insertada o actualizada."""
     zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
     white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
     border_side = Side(style="thin", color="CBD5E1")
@@ -352,7 +424,7 @@ def style_row(ws, row_idx: int):
             c.number_format = "+#,##0;-#,##0;0"
 
 
-def save_workbook_safe(wb):
+def save_workbook_safe(wb, sync_cloud: bool = True):
     try:
         wb.save(EXCEL_FILE)
     except PermissionError:
@@ -360,6 +432,8 @@ def save_workbook_safe(wb):
             status_code=423,
             detail="El archivo 'requerimientos_ingenieria.xlsx' está abierto en Excel. Ciérralo para guardar los cambios en disco."
         )
+    if sync_cloud:
+        trigger_async_github_sync()
 
 
 def read_items_from_ws(ws) -> list[dict]:
@@ -394,9 +468,20 @@ def write_items_to_ws(ws, items: list[dict]):
 
 def get_file_metadata():
     if not EXCEL_FILE.exists():
-        return {"path": str(EXCEL_FILE), "last_modified": None}
+        return {"path": str(EXCEL_FILE), "last_modified": None, "github_sync": last_github_sync_status}
     mtime = datetime.fromtimestamp(EXCEL_FILE.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-    return {"path": str(EXCEL_FILE), "last_modified": mtime}
+    return {
+        "path": str(EXCEL_FILE),
+        "last_modified": mtime,
+        "github_sync": last_github_sync_status
+    }
+
+
+@app.on_event("startup")
+def on_startup():
+    with excel_lock:
+        pull_excel_from_github()
+        ensure_excel_exists()
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -412,8 +497,10 @@ def serve_dashboard():
 
 
 @app.get("/api/data")
-def get_all_data():
+def get_all_data(pull: bool = False):
     with excel_lock:
+        if pull and GITHUB_TOKEN:
+            pull_excel_from_github()
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
@@ -442,18 +529,10 @@ def get_all_data():
                             if val_clean and val_clean not in catalogos[cat_headers[idx]]:
                                 catalogos[cat_headers[idx]].append(val_clean)
 
-        curr_year = date.today().year
-        festivos = {
-            d.isoformat(): name
-            for y in (curr_year, curr_year + 1)
-            for d, name in get_colombia_holidays(y).items()
-        }
-
         wb.close()
         return {
             "requerimientos": items,
             "catalogos": catalogos,
-            "festivos": festivos,
             "file_info": get_file_metadata()
         }
 
@@ -507,7 +586,7 @@ def create_requerimiento(payload: RequerimientoInput):
 
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
 
         return {
@@ -517,7 +596,7 @@ def create_requerimiento(payload: RequerimientoInput):
             "Avance_Pct": avance_final,
             "requerimientos": items,
             "file_info": get_file_metadata(),
-            "message": "Procedimiento guardado y cronograma recalculado con festivos"
+            "message": "Procedimiento guardado permanentemente"
         }
 
 
@@ -555,7 +634,7 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
 
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
 
         return {
@@ -563,13 +642,12 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "ID_Req": id_req,
             "requerimientos": items,
             "file_info": get_file_metadata(),
-            "message": "Procedimiento actualizado y cronograma recalculado"
+            "message": "Procedimiento actualizado permanentemente"
         }
 
 
 @app.patch("/api/requerimientos/{id_req}/progreso")
 def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
-    """Actualiza Estado/% en línea y recalcula fechas saltando fines de semana y festivos."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -599,7 +677,7 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
 
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
 
         return {
@@ -614,7 +692,6 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
 
 @app.patch("/api/requerimientos/{id_req}/prioridad")
 def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
-    """Cambia prioridad y desplaza en cascada las fechas de los demás entregables."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -629,7 +706,7 @@ def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
         target["Prioridad"] = payload.Prioridad.strip()
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
 
         return {
@@ -646,7 +723,6 @@ def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
 
 @app.patch("/api/requerimientos/{id_req}/demora")
 def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput):
-    """Registra horas de demora externa y comentarios para ajustar Fecha_Real_Entrega."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -663,7 +739,7 @@ def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput):
 
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
 
         return {
@@ -692,13 +768,13 @@ def delete_requerimiento(id_req: str):
 
         compute_cascade_schedule(new_items)
         write_items_to_ws(ws, new_items)
-        save_workbook_safe(wb)
+        save_workbook_safe(wb, sync_cloud=True)
         wb.close()
         return {
             "status": "ok",
             "requerimientos": new_items,
             "file_info": get_file_metadata(),
-            "message": f"Requerimiento {id_req} eliminado y cronograma recalculado"
+            "message": f"Requerimiento {id_req} eliminado permanentemente"
         }
 
 
