@@ -3,41 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingeniería · Control de Procedimientos, Festivos y Entregas Reales</title>
+  <title>Ingeniería · Centro de Control, Cronograma y Entregas Reales</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2323272E'/><path d='M26 68V46M50 68V30M74 68V52' stroke='%234E9F78' stroke-width='10' stroke-linecap='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=H2BILbh90oLNEUgPOKUilJn7DzBA_YYdsL-sVDh0kuosDR8WqZTuVd9UgDyxuCaaeeEu4wcrQd6Bv9oU0jOjRJoh2fV2nYwsWQx5E6bfI4ccYcKcoZlUAjYlTOEo851JGtV4m8zkax0VKHRMv2Zt9SyG1qUcmy5ZlmPDtbliMUYGNnK6O7mL2_neipanfQPQjPmkf8Djq_YyEqjr5bHSa4L9fQ8qW73M6uXBXQ56gm6KGQWGBbWvG1aBoPuwREnuO2ukHuPo6ua6-zHZlqU4pIG8Mw6kQFBphv4R8Is6P6HqgU5ROdqC8-25IdfuXQp6" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=TI5T0NWT5hTyxhIpABsUFbi6eAizUfN413Rv2nD5OSFs1pHnPH9PnJahZOK8yDJlCMgQZrpa-FCP3YPaParDVZlNZ9gPl_mH6yU47zbv-IVfPU7KqLpUhp25-bHP0XVtGGM5QGONZ1SUPRt-o8uCnHaEDYfBFwzIsKt8gX5VWGdJRLmz4BwTOejBUrr_QWakl3b0KtdaSV5UggPje1J1nYQk3iOIcGWGg3p-QgoyzJkTYz4FSTKLwBwIDd5CWBgoch3dXpxsVWQPmQy3EUrat0xvxoqyu3SIv48Aj3tcH0uI1TuwbBTwywC52K0Evsbm" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
-       1. DESIGN TOKENS — LOW-GLARE ARCHITECTURAL PALETTE (GRAFITO & PAPEL CÁLIDO)
+       1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (GRAFITO & PAPEL CÁLIDO)
        ========================================================================== */
     :root,
     [data-theme="graphite"] {
       --bg-canvas: #131518;
       --bg-surface: #1B1E23;
       --bg-elevated: #23272E;
-      --bg-hover: #292E37;
+      --bg-hover: #282D36;
       --bg-topbar: rgba(27, 30, 35, 0.92);
 
       --border-hairline: rgba(255, 255, 255, 0.08);
-      --border-strong: rgba(255, 255, 255, 0.15);
+      --border-strong: rgba(255, 255, 255, 0.16);
 
       --ink-primary: #EFECE6;
       --ink-secondary: #989EA8;
       --ink-muted: #686E78;
 
       --tone-sage: #4E9F78;
-      --tone-sage-soft: rgba(78, 159, 120, 0.14);
+      --tone-sage-soft: rgba(78, 159, 120, 0.15);
       --tone-ochre: #D4963B;
       --tone-ochre-soft: rgba(212, 150, 59, 0.15);
       --tone-terracotta: #D16052;
-      --tone-terracotta-soft: rgba(209, 96, 82, 0.14);
+      --tone-terracotta-soft: rgba(209, 96, 82, 0.15);
       --tone-steel: #5B84B1;
-      --tone-steel-soft: rgba(91, 132, 177, 0.15);
-      --tone-neutral: #7E8591;
-      --tone-neutral-soft: rgba(126, 133, 145, 0.14);
+      --tone-steel-soft: rgba(91, 132, 177, 0.16);
+      --tone-neutral: #848B96;
+      --tone-neutral-soft: rgba(132, 139, 150, 0.14);
 
       --accent-primary: #EFECE6;
       --accent-primary-ink: #131518;
@@ -47,13 +47,15 @@
       --chart-grid: rgba(255, 255, 255, 0.06);
       --chart-label: #989EA8;
       --chart-ink: #EFECE6;
+      --holiday-bg: rgba(209, 96, 82, 0.09);
+      --weekend-bg: rgba(255, 255, 255, 0.025);
     }
 
     [data-theme="paper"] {
       --bg-canvas: #F5F4F0;
       --bg-surface: #FFFFFF;
       --bg-elevated: #ECEAE3;
-      --bg-hover: #F2F0EA;
+      --bg-hover: #F3F1EC;
       --bg-topbar: rgba(255, 255, 255, 0.92);
 
       --border-hairline: #E3E0D8;
@@ -64,13 +66,13 @@
       --ink-muted: #8A909A;
 
       --tone-sage: #2E7D5B;
-      --tone-sage-soft: rgba(46, 125, 91, 0.11);
+      --tone-sage-soft: rgba(46, 125, 91, 0.12);
       --tone-ochre: #B5761E;
       --tone-ochre-soft: rgba(181, 118, 30, 0.12);
       --tone-terracotta: #C2493B;
-      --tone-terracotta-soft: rgba(194, 73, 59, 0.10);
+      --tone-terracotta-soft: rgba(194, 73, 59, 0.11);
       --tone-steel: #3B6998;
-      --tone-steel-soft: rgba(59, 105, 152, 0.11);
+      --tone-steel-soft: rgba(59, 105, 152, 0.12);
       --tone-neutral: #686E78;
       --tone-neutral-soft: rgba(104, 110, 120, 0.11);
 
@@ -82,6 +84,8 @@
       --chart-grid: rgba(27, 29, 33, 0.07);
       --chart-label: #5B606A;
       --chart-ink: #1B1D21;
+      --holiday-bg: rgba(194, 73, 59, 0.07);
+      --weekend-bg: rgba(27, 29, 33, 0.03);
     }
 
     :root {
@@ -123,23 +127,23 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-hairline);
-      padding: 12px 28px;
+      padding: 11px 24px;
     }
 
     .topbar-inner {
-      max-width: 1500px;
+      max-width: 1460px;
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
     .workspace-id {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 11px;
       flex-wrap: wrap;
     }
 
@@ -153,11 +157,11 @@
       place-items: center;
       color: var(--tone-sage);
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
 
     .workspace-title {
-      font-size: 0.98rem;
+      font-size: 0.96rem;
       font-weight: 600;
       letter-spacing: -0.015em;
     }
@@ -170,7 +174,7 @@
       border-radius: 999px;
       background: var(--bg-elevated);
       border: 1px solid var(--border-hairline);
-      font-size: 0.74rem;
+      font-size: 0.73rem;
       color: var(--ink-secondary);
     }
 
@@ -203,7 +207,7 @@
     .topbar-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -211,11 +215,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
-      height: 36px;
-      padding: 0 14px;
+      gap: 6px;
+      height: 34px;
+      padding: 0 13px;
       border-radius: var(--radius-sm);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
@@ -257,16 +261,22 @@
       background: var(--bg-elevated);
     }
 
+    .btn-ghost.active-toggle {
+      background: var(--tone-steel-soft);
+      color: var(--tone-steel);
+      border-color: rgba(91, 132, 177, 0.35);
+    }
+
     /* ==========================================================================
-       3. CONTAINER & PROJECT PORTFOLIO CAPSULES
+       3. CONTAINER, PORTFOLIO CAPSULES & RADAR DE SALUD
        ========================================================================== */
     .container {
-      max-width: 1500px;
+      max-width: 1460px;
       margin: 0 auto;
-      padding: 22px 28px 64px;
+      padding: 20px 24px 64px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
 
     .section-label-row {
@@ -279,7 +289,7 @@
     }
 
     .section-eyebrow {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -288,7 +298,7 @@
 
     .projects-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 12px;
     }
 
@@ -296,10 +306,10 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 13px 15px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 13px;
       cursor: pointer;
       text-align: left;
       transition: all var(--transition-fast);
@@ -318,8 +328,8 @@
 
     .ring-wrap {
       position: relative;
-      width: 48px;
-      height: 48px;
+      width: 46px;
+      height: 46px;
       flex-shrink: 0;
       display: grid;
       place-items: center;
@@ -327,13 +337,13 @@
 
     .ring-wrap svg {
       transform: rotate(-90deg);
-      width: 48px;
-      height: 48px;
+      width: 46px;
+      height: 46px;
     }
 
     .ring-text {
       position: absolute;
-      font-size: 0.72rem;
+      font-size: 0.71rem;
       font-weight: 600;
       color: var(--ink-primary);
     }
@@ -344,7 +354,7 @@
     }
 
     .project-name {
-      font-size: 0.9rem;
+      font-size: 0.89rem;
       font-weight: 600;
       color: var(--ink-primary);
       white-space: nowrap;
@@ -354,11 +364,11 @@
     }
 
     .project-stats {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--ink-secondary);
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
@@ -372,52 +382,88 @@
       flex-wrap: wrap;
     }
 
-    .tag-extra {
+    .pill-tag {
       display: inline-flex;
       align-items: center;
       padding: 1px 7px;
       border-radius: 999px;
-      font-size: 0.69rem;
+      font-size: 0.68rem;
       font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tag-extra {
       background: var(--tone-terracotta-soft);
       color: var(--tone-terracotta);
     }
 
     .tag-ochre {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 7px;
-      border-radius: 999px;
-      font-size: 0.69rem;
-      font-weight: 600;
       background: var(--tone-ochre-soft);
       color: var(--tone-ochre);
     }
 
     .tag-early {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 7px;
-      border-radius: 999px;
-      font-size: 0.69rem;
-      font-weight: 600;
       background: var(--tone-sage-soft);
       color: var(--tone-sage);
     }
 
+    .tag-steel {
+      background: var(--tone-steel-soft);
+      color: var(--tone-steel);
+    }
+
     /* ==========================================================================
-       4. FILTER TOOLBAR
+       4. SIMULADOR "¿QUÉ PASA SI...?" COLAPSABLE
+       ========================================================================== */
+    .simulator-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--tone-steel);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .simulator-bar.open {
+      display: flex;
+    }
+
+    .sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sim-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.79rem;
+      color: var(--ink-secondary);
+    }
+
+    .sim-group strong {
+      color: var(--ink-primary);
+    }
+
+    /* ==========================================================================
+       5. FILTER TOOLBAR
        ========================================================================== */
     .filter-toolbar {
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      padding: 12px 16px;
+      padding: 11px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
 
     .filter-controls {
@@ -430,13 +476,13 @@
 
     .input-clean,
     .select-clean {
-      height: 34px;
+      height: 33px;
       background: var(--bg-elevated);
       border: 1px solid var(--border-hairline);
       color: var(--ink-primary);
       border-radius: var(--radius-sm);
-      padding: 0 11px;
-      font-size: 0.8rem;
+      padding: 0 10px;
+      font-size: 0.79rem;
       font-family: inherit;
       outline: none;
       transition: border-color var(--transition-fast);
@@ -464,13 +510,14 @@
       border: none;
       background: transparent;
       color: var(--ink-secondary);
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 500;
       padding: 5px 10px;
       border-radius: 6px;
       cursor: pointer;
       font-family: inherit;
       transition: all var(--transition-fast);
+      white-space: nowrap;
     }
 
     .seg-btn.active {
@@ -480,12 +527,16 @@
     }
 
     /* ==========================================================================
-       5. ANALYTICS BENTO GRID
+       6. ANALYTICS BENTO GRID (COLAPSABLE PARA PRIORIZAR LA MESA DE TRABAJO)
        ========================================================================== */
     .analytics-grid {
       display: grid;
       grid-template-columns: 7fr 5fr;
-      gap: 16px;
+      gap: 14px;
+    }
+
+    .analytics-grid.collapsed {
+      display: none;
     }
 
     @media (max-width: 1080px) {
@@ -498,7 +549,7 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 16px 18px;
       box-shadow: var(--shadow-card);
     }
 
@@ -506,30 +557,30 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .card-title {
-      font-size: 0.9rem;
+      font-size: 0.89rem;
       font-weight: 600;
       color: var(--ink-primary);
       letter-spacing: -0.01em;
     }
 
     .card-desc {
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       color: var(--ink-secondary);
       margin-top: 2px;
     }
 
     .chart-box {
       width: 100%;
-      height: 235px;
+      height: 220px;
     }
 
     /* ==========================================================================
-       6. INTERACTIVE PROCEDURE WORKBENCH TABLE
+       7. MESA DE TRABAJO ZERO-HORIZONTAL-SCROLL + MULTI-VISTA (LISTA / GANTT / KANBAN)
        ========================================================================== */
     .workbench-card {
       background: var(--bg-surface);
@@ -540,7 +591,7 @@
     }
 
     .workbench-header {
-      padding: 16px 20px;
+      padding: 14px 18px;
       border-bottom: 1px solid var(--border-hairline);
       display: flex;
       align-items: center;
@@ -549,11 +600,18 @@
       gap: 12px;
     }
 
+    .workbench-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
     .summary-strip {
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-size: 0.78rem;
+      gap: 12px;
+      font-size: 0.77rem;
       color: var(--ink-secondary);
       flex-wrap: wrap;
     }
@@ -563,37 +621,46 @@
       font-weight: 600;
     }
 
-    .table-scroll {
-      overflow-x: auto;
+    /* Tabla adaptativa Zero-Scroll en escritorio (6 columnas ergonómicas) */
+    .table-wrap {
+      width: 100%;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
+      table-layout: fixed;
     }
 
+    col.col-id      { width: 14%; }
+    col.col-desc    { width: 34%; }
+    col.col-state   { width: 15%; }
+    col.col-prog    { width: 15%; }
+    col.col-date    { width: 13%; }
+    col.col-actions { width: 9%; }
+
     th {
-      padding: 11px 12px;
-      font-size: 0.7rem;
+      padding: 10px 12px;
+      font-size: 0.69rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--ink-secondary);
       background: var(--bg-elevated);
       border-bottom: 1px solid var(--border-hairline);
-      white-space: nowrap;
     }
 
     td {
-      padding: 12px 12px;
+      padding: 13px 12px;
       font-size: 0.81rem;
       border-bottom: 1px solid var(--border-hairline);
-      vertical-align: middle;
+      vertical-align: top;
+      word-wrap: break-word;
     }
 
     tbody tr {
-      transition: background-color 0.25s ease;
+      transition: background-color 0.2s ease;
     }
 
     tbody tr:hover {
@@ -613,20 +680,83 @@
       100% { background-color: transparent; }
     }
 
-    .proc-title {
-      font-weight: 500;
-      color: var(--ink-primary);
-      margin-bottom: 2px;
+    /* Celda 1: Identidad y Responsable */
+    .id-badge {
+      font-weight: 600;
+      font-size: 0.79rem;
+      color: var(--tone-steel);
     }
 
-    .proc-sub {
-      font-size: 0.74rem;
+    .proj-chip {
+      display: inline-block;
+      margin-top: 3px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .person-line {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.73rem;
       color: var(--ink-secondary);
+    }
+
+    .avatar-mini {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      color: var(--ink-primary);
+      font-size: 0.62rem;
+      font-weight: 600;
+      display: inline-grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    /* Celda 2: Procedimiento y Detalle Expandible */
+    .proc-title {
+      font-weight: 600;
+      font-size: 0.84rem;
+      color: var(--ink-primary);
       line-height: 1.35;
     }
 
+    .proc-sub {
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+      line-height: 1.4;
+      margin-top: 3px;
+    }
+
+    .proc-sub.clamped {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .expand-link {
+      background: none;
+      border: none;
+      color: var(--tone-steel);
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 2px 0 0;
+      font-family: inherit;
+    }
+
+    .expand-link:hover {
+      text-decoration: underline;
+    }
+
     .ext-comment-box {
-      margin-top: 6px;
+      margin-top: 7px;
       padding: 6px 9px;
       border-radius: 6px;
       background: var(--tone-ochre-soft);
@@ -642,20 +772,28 @@
       margin-right: 4px;
     }
 
-    /* Inline Pill Selects */
+    /* Celda 3: Prioridad y Estado Apilados */
+    .stack-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
     .pill-select {
       appearance: none;
       -webkit-appearance: none;
       border-radius: 999px;
-      padding: 4px 23px 4px 10px;
-      font-size: 0.74rem;
+      padding: 4px 22px 4px 9px;
+      font-size: 0.73rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
       border: 1px solid transparent;
       outline: none;
+      max-width: 100%;
       background-repeat: no-repeat;
-      background-position: right 8px center;
+      background-position: right 7px center;
       background-size: 10px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23989EA8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
       transition: all var(--transition-fast);
@@ -664,7 +802,7 @@
     .status-Pendiente {
       background-color: var(--tone-neutral-soft);
       color: var(--tone-neutral);
-      border-color: rgba(126, 133, 145, 0.25);
+      border-color: rgba(132, 139, 150, 0.25);
     }
 
     .status-EnDesarrollo {
@@ -706,21 +844,27 @@
     .prio-4 {
       background-color: var(--tone-neutral-soft);
       color: var(--tone-neutral);
-      border-color: rgba(126, 133, 145, 0.2);
+      border-color: rgba(132, 139, 150, 0.2);
     }
 
-    /* Inline Progress Editor */
-    .progress-editor {
+    /* Celda 4: Avance Interactivo + Botones Rápidos */
+    .progress-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .progress-top-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      min-width: 150px;
+      gap: 6px;
     }
 
     .progress-slider {
       -webkit-appearance: none;
       appearance: none;
-      width: 82px;
+      width: 100%;
+      max-width: 92px;
       height: 6px;
       border-radius: 999px;
       background: var(--bg-elevated);
@@ -746,17 +890,17 @@
       border: 1px solid var(--border-hairline);
       border-radius: 6px;
       padding: 2px 5px;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--ink-primary);
     }
 
     .pct-box input {
-      width: 32px;
+      width: 30px;
       background: transparent;
       border: none;
       color: inherit;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 600;
       text-align: right;
       outline: none;
@@ -768,13 +912,33 @@
       margin: 0;
     }
 
-    .delivery-cell {
-      white-space: nowrap;
+    .quick-step-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
+    .step-chip {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-secondary);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-size: 0.68rem;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .step-chip:hover {
+      color: var(--ink-primary);
+      border-color: var(--tone-sage);
+    }
+
+    /* Celda 5: Entrega Real y Horas */
     .delivery-date {
       font-weight: 600;
-      font-size: 0.81rem;
+      font-size: 0.8rem;
       color: var(--ink-primary);
       display: block;
     }
@@ -782,41 +946,42 @@
     .delivery-meta {
       font-size: 0.71rem;
       color: var(--ink-secondary);
-      margin-top: 2px;
+      margin-top: 3px;
       display: flex;
-      align-items: center;
-      gap: 5px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 3px;
     }
 
-    .hours-cell {
-      white-space: nowrap;
-      font-size: 0.78rem;
+    .hours-line {
+      margin-top: 5px;
+      font-size: 0.74rem;
       color: var(--ink-secondary);
     }
 
-    .hours-cell strong {
+    .hours-line strong {
       color: var(--ink-primary);
     }
 
-    .row-actions {
+    /* Celda 6: Acciones Compactas Verticales */
+    .row-actions-col {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 5px;
-      flex-wrap: nowrap;
+      align-items: stretch;
     }
 
     .icon-btn {
-      height: 28px;
-      padding: 0 9px;
+      height: 26px;
+      padding: 0 8px;
       border-radius: 6px;
       background: var(--bg-elevated);
       border: 1px solid var(--border-hairline);
       color: var(--ink-secondary);
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-family: inherit;
       cursor: pointer;
       transition: all var(--transition-fast);
+      text-align: center;
       white-space: nowrap;
     }
 
@@ -827,7 +992,7 @@
 
     .icon-btn.ext-btn {
       color: var(--tone-ochre);
-      border-color: rgba(212, 150, 59, 0.25);
+      border-color: rgba(212, 150, 59, 0.28);
     }
 
     .icon-btn.ext-btn:hover {
@@ -841,7 +1006,204 @@
     }
 
     /* ==========================================================================
-       7. MODAL RÁPIDO DE DEMORA EXTERNA Y COMENTARIOS + SLIDE-OVER DRAWER
+       8. VISTA 2: CRONOGRAMA VISUAL / MINI-GANTT CON FESTIVOS COLOMBIA
+       ========================================================================== */
+    .gantt-container {
+      padding: 18px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .gantt-container.active {
+      display: flex;
+    }
+
+    .gantt-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.74rem;
+      color: var(--ink-secondary);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .gantt-grid-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+    }
+
+    .gantt-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+    }
+
+    .gantt-table th,
+    .gantt-table td {
+      border-bottom: 1px solid var(--border-hairline);
+      border-right: 1px solid var(--border-hairline);
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 0.71rem;
+    }
+
+    .gantt-table th.task-col,
+    .gantt-table td.task-col {
+      text-align: left;
+      padding: 10px 12px;
+      min-width: 240px;
+      max-width: 270px;
+      position: sticky;
+      left: 0;
+      background: var(--bg-surface);
+      z-index: 2;
+    }
+
+    .gantt-table th.task-col {
+      background: var(--bg-elevated);
+    }
+
+    .gantt-day-col {
+      min-width: 38px;
+    }
+
+    .gantt-day-col.is-weekend {
+      background: var(--weekend-bg);
+      color: var(--ink-muted);
+    }
+
+    .gantt-day-col.is-holiday {
+      background: var(--holiday-bg);
+      color: var(--tone-terracotta);
+      font-weight: 600;
+    }
+
+    .gantt-bar-ing {
+      height: 18px;
+      border-radius: 5px;
+      background: var(--tone-steel);
+      color: #fff;
+      font-size: 0.66rem;
+      font-weight: 600;
+      display: grid;
+      place-items: center;
+    }
+
+    .gantt-bar-ext {
+      height: 18px;
+      border-radius: 5px;
+      background: var(--tone-ochre);
+      color: #131518;
+      font-size: 0.66rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+
+    .gantt-bar-done {
+      height: 18px;
+      border-radius: 5px;
+      background: var(--tone-sage);
+      color: #fff;
+      font-size: 0.66rem;
+      font-weight: 600;
+      display: grid;
+      place-items: center;
+    }
+
+    /* ==========================================================================
+       9. VISTA 3: TABLERO KANBAN POR ESTADO
+       ========================================================================== */
+    .kanban-board {
+      padding: 18px;
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .kanban-board.active {
+      display: grid;
+    }
+
+    @media (max-width: 1024px) {
+      .kanban-board.active {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .kanban-board.active {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kanban-col {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 260px;
+    }
+
+    .kanban-col-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .kanban-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Responsive para pantallas pequeñas (móvil / tablet) sin scroll horizontal */
+    @media (max-width: 900px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead {
+        display: none;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border-strong);
+        padding: 12px;
+      }
+      td {
+        border: none;
+        padding: 6px 4px;
+      }
+    }
+
+    /* ==========================================================================
+       10. MODALES, DRAWER Y TOAST
        ========================================================================== */
     .modal-backdrop,
     .drawer-overlay {
@@ -1022,7 +1384,7 @@
       <div class="workspace-id">
         <div class="workspace-mark">ING</div>
         <div>
-          <div class="workspace-title">Control de Procedimientos, Festivos y Entregas Reales</div>
+          <div class="workspace-title">Centro de Control · Procedimientos y Entregas Reales</div>
         </div>
         <div class="sync-pill" id="syncPill">
           <span class="sync-dot" id="syncDot"></span>
@@ -1032,9 +1394,11 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Modo Papel Cálido</button>
+        <button class="btn btn-ghost" id="simToggleBtn" onclick="toggleSimulator()">Simulador Capacidad</button>
+        <button class="btn btn-ghost" onclick="copyExecutiveReport()">Copiar Reporte</button>
+        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Papel Cálido</button>
         <a class="btn btn-secondary" href="/api/export" target="_blank">Exportar .xlsx</a>
-        <button class="btn btn-primary" onclick="openDrawer()">+ Nuevo Procedimiento</button>
+        <button class="btn btn-primary" onclick="openDrawer()">+ Nuevo</button>
       </div>
     </div>
   </header>
@@ -1044,15 +1408,41 @@
     <section>
       <div class="section-label-row">
         <span class="section-eyebrow">Avance Ponderado y Entrega Real Estimada (Clic para filtrar)</span>
-        <span class="section-eyebrow tabular" id="globalSummaryTag">Calendario Colombia · Sáb/Dom y Festivos excluidos · 8h/día</span>
+        <span class="section-eyebrow tabular" id="globalSummaryTag">Calendario Colombia · Festivos excluidos · 8h/día</span>
       </div>
       <div class="projects-strip" id="projectsStrip"></div>
     </section>
 
-    <!-- 2. BARRA DE FILTROS CONTEXTUALES -->
+    <!-- 2. SIMULADOR INTERACTIVO "¿QUÉ PASA SI...?" -->
+    <section class="simulator-bar" id="simulatorBar">
+      <div class="sim-controls">
+        <div class="sim-group">
+          <span>Simular jornada diaria:</span>
+          <div class="segmented">
+            <button class="seg-btn" data-simh="6" onclick="setSimHours(6)">6h/día</button>
+            <button class="seg-btn active" data-simh="8" onclick="setSimHours(8)">8h/día (Normal)</button>
+            <button class="seg-btn" data-simh="10" onclick="setSimHours(10)">10h/día (Extra)</button>
+          </div>
+        </div>
+        <div class="sim-group">
+          <span>Apoyo adicional:</span>
+          <div class="segmented">
+            <button class="seg-btn active" data-simcap="1" onclick="setSimCapacity(1)">1x Equipo actual</button>
+            <button class="seg-btn" data-simcap="1.5" onclick="setSimCapacity(1.5)">1.5x (+Apoyo medio)</button>
+            <button class="seg-btn" data-simcap="2" onclick="setSimCapacity(2)">2x (+1 Ingeniero)</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="pill-tag tag-steel" id="simStatusLabel">Modo real (8h/día · 1x)</span>
+        <button class="btn btn-ghost" style="height:28px; font-size:0.74rem;" onclick="resetSimulator()">Restaurar</button>
+      </div>
+    </section>
+
+    <!-- 3. BARRA DE FILTROS CONTEXTUALES -->
     <section class="filter-toolbar">
       <div class="filter-controls">
-        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, comentario o ID..." oninput="applyFilters()" />
+        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, nota o ID ( / )..." oninput="applyFilters()" />
 
         <select id="fResponsable" class="select-clean" onchange="applyFilters()">
           <option value="TODOS">Responsable: Todos</option>
@@ -1080,21 +1470,24 @@
 
         <div class="segmented" role="group" aria-label="Filtro de alcance">
           <button class="seg-btn active" data-scope="TODOS" onclick="setScopeFilter('TODOS')">Todos</button>
-          <button class="seg-btn" data-scope="No" onclick="setScopeFilter('No')">Plan Original</button>
-          <button class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios (+Tiempo)</button>
+          <button class="seg-btn" data-scope="No" onclick="setScopeFilter('No')">Plan Base</button>
+          <button class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios</button>
         </div>
       </div>
 
-      <button class="btn btn-ghost" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="btn btn-ghost" id="toggleChartsBtn" onclick="toggleCharts()">Ocultar Gráficas</button>
+        <button class="btn btn-ghost" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
+      </div>
     </section>
 
-    <!-- 3. ANALÍTICA VISUAL -->
-    <section class="analytics-grid">
+    <!-- 4. ANALÍTICA VISUAL -->
+    <section class="analytics-grid" id="analyticsGrid">
       <article class="card">
         <div class="card-head">
           <div>
             <h3 class="card-title">Horas Planeadas, Cambios, Ejecución Real y Demoras Externas</h3>
-            <p class="card-desc">Incluye tiempo adicional por motivos externos que frenan la entrega</p>
+            <p class="card-desc">Comparativo visual del esfuerzo técnico y bloqueos externos</p>
           </div>
           <div class="segmented">
             <button class="seg-btn active" id="btnAxisProy" onclick="setBarAxis('Proyecto')">Por Proyecto</button>
@@ -1119,36 +1512,55 @@
       </article>
     </section>
 
-    <!-- 4. MESA DE TRABAJO DE PROCEDIMIENTOS -->
+    <!-- 5. MESA DE TRABAJO MULTI-VISTA (CERO SCROLL HORIZONTAL) -->
     <section class="workbench-card">
       <div class="workbench-header">
         <div>
-          <h3 class="card-title">Cronograma Dinámico (Festivos Colombia + Demoras Externas)</h3>
-          <p class="card-desc">Ajusta prioridades, estado, avance o registra demoras por motivos externos con su comentario explicativo</p>
+          <h3 class="card-title">Cronograma Dinámico de Entregables</h3>
+          <p class="card-desc">Edición directa sin desplazamiento horizontal · Alterna entre Lista, Línea de Tiempo (Gantt) o Tablero Kanban</p>
         </div>
-        <div class="summary-strip" id="tableSummaryStrip"></div>
+
+        <div class="workbench-right">
+          <div class="summary-strip" id="tableSummaryStrip"></div>
+
+          <div class="segmented" role="group" aria-label="Modo de vista">
+            <button class="seg-btn active" id="viewBtnList" onclick="setViewMode('list')">Lista</button>
+            <button class="seg-btn" id="viewBtnGantt" onclick="setViewMode('gantt')">Cronograma (Gantt)</button>
+            <button class="seg-btn" id="viewBtnKanban" onclick="setViewMode('kanban')">Tablero Kanban</button>
+          </div>
+        </div>
       </div>
 
-      <div class="table-scroll">
+      <!-- VISTA 1: LISTA COMPACTA SIN SCROLL HORIZONTAL -->
+      <div class="table-wrap" id="listViewContainer">
         <table>
+          <colgroup>
+            <col class="col-id" />
+            <col class="col-desc" />
+            <col class="col-state" />
+            <col class="col-prog" />
+            <col class="col-date" />
+            <col class="col-actions" />
+          </colgroup>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Proyecto · Fase</th>
-              <th>Procedimiento y Comentarios Externos</th>
-              <th>Solicita</th>
-              <th>Responsable</th>
-              <th>Prioridad</th>
-              <th>Fecha Real Entrega</th>
-              <th>Estado</th>
+              <th>ID · Proyecto · Equipo</th>
+              <th>Procedimiento y Notas Externas</th>
+              <th>Prioridad y Estado</th>
               <th>Avance %</th>
-              <th>Horas</th>
+              <th>Entrega Real y Horas</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+
+      <!-- VISTA 2: LÍNEA DE TIEMPO / MINI-GANTT CON FESTIVOS COLOMBIA -->
+      <div class="gantt-container" id="ganttViewContainer"></div>
+
+      <!-- VISTA 3: TABLERO KANBAN -->
+      <div class="kanban-board" id="kanbanViewContainer"></div>
     </section>
   </main>
 
@@ -1177,7 +1589,7 @@
 
           <div class="field">
             <label>Comentarios / Justificación del motivo externo</label>
-            <textarea id="delayCommentInput" placeholder="Ej. Esperando aprobación de cliente, validación de dominio SMTP con proveedor externo, pruebas pendientes de usuario..."></textarea>
+            <textarea id="delayCommentInput" placeholder="Ej. Esperando aprobación de calidad/cliente, validación SMTP con proveedor externo..."></textarea>
           </div>
 
           <div class="sync-hint">
@@ -1320,22 +1732,26 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // Únicamente los requerimientos reales cargados por el usuario
+    // Requerimientos reales del usuario
     const FALLBACK_DATA = [
       { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
       { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
       { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" }
     ];
 
-    const HORAS_POR_DIA = 8.0;
-    const holidayCache = {};
+    const holidayMapCache = {};
+    let simHoursPerDay = 8.0;
+    let simCapacityMult = 1.0;
+
     let allData = [];
     let filteredData = [];
+    let expandedDetails = new Set();
     let shiftedIds = new Set();
     let selectedProject = "TODOS";
     let selectedScope = "TODOS";
     let barAxis = "Proyecto";
     let donutAxis = "Responsable";
+    let viewMode = "list";
     let isBackendConnected = false;
     let chartHours = null;
     let chartDistribution = null;
@@ -1363,7 +1779,7 @@
 
     function nextMonday(d) {
       const copy = new Date(d.getTime());
-      const wd = copy.getDay(); // 0=Dom, 1=Lun .. 6=Sab
+      const wd = copy.getDay();
       if (wd === 1) return copy;
       const add = wd === 0 ? 1 : (8 - wd);
       copy.setDate(copy.getDate() + add);
@@ -1393,39 +1809,43 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
-    function getColombiaHolidaysSet(year) {
-      if (holidayCache[year]) return holidayCache[year];
+    function getColombiaHolidaysMap(year) {
+      if (holidayMapCache[year]) return holidayMapCache[year];
       const easter = easterSunday(year);
-      const list = [
-        new Date(year, 0, 1),
-        new Date(year, 4, 1),
-        new Date(year, 6, 20),
-        new Date(year, 7, 7),
-        new Date(year, 11, 8),
-        new Date(year, 11, 25),
-        nextMonday(new Date(year, 0, 6)),
-        nextMonday(new Date(year, 2, 19)),
-        nextMonday(new Date(year, 5, 29)),
-        nextMonday(new Date(year, 7, 15)),
-        nextMonday(new Date(year, 9, 12)),
-        nextMonday(new Date(year, 10, 1)),
-        nextMonday(new Date(year, 10, 11)),
-        shiftDays(easter, -3),
-        shiftDays(easter, -2),
-        nextMonday(shiftDays(easter, 39)),
-        nextMonday(shiftDays(easter, 60)),
-        nextMonday(shiftDays(easter, 68))
+      const entries = [
+        [new Date(year, 0, 1), "Año Nuevo"],
+        [new Date(year, 4, 1), "Día del Trabajo"],
+        [new Date(year, 6, 20), "Día de la Independencia"],
+        [new Date(year, 7, 7), "Batalla de Boyacá"],
+        [new Date(year, 11, 8), "Inmaculada Concepción"],
+        [new Date(year, 11, 25), "Navidad"],
+        [nextMonday(new Date(year, 0, 6)), "Reyes Magos"],
+        [nextMonday(new Date(year, 2, 19)), "San José"],
+        [nextMonday(new Date(year, 5, 29)), "San Pedro y San Pablo"],
+        [nextMonday(new Date(year, 7, 15)), "Asunción de la Virgen"],
+        [nextMonday(new Date(year, 9, 12)), "Día de la Raza"],
+        [nextMonday(new Date(year, 10, 1)), "Todos los Santos"],
+        [nextMonday(new Date(year, 10, 11)), "Independencia de Cartagena"],
+        [shiftDays(easter, -3), "Jueves Santo"],
+        [shiftDays(easter, -2), "Viernes Santo"],
+        [nextMonday(shiftDays(easter, 39)), "Ascensión del Señor"],
+        [nextMonday(shiftDays(easter, 60)), "Corpus Christi"],
+        [nextMonday(shiftDays(easter, 68)), "Sagrado Corazón de Jesús"]
       ];
-      const set = new Set(list.map(formatIsoDate));
-      holidayCache[year] = set;
-      return set;
+      const map = new Map();
+      entries.forEach(([dt, name]) => map.set(formatIsoDate(dt), name));
+      holidayMapCache[year] = map;
+      return map;
+    }
+
+    function getHolidayName(d) {
+      return getColombiaHolidaysMap(d.getFullYear()).get(formatIsoDate(d)) || null;
     }
 
     function isWorkingDay(d) {
       const wd = d.getDay();
       if (wd === 0 || wd === 6) return false;
-      const iso = formatIsoDate(d);
-      return !getColombiaHolidaysSet(d.getFullYear()).has(iso);
+      return !getHolidayName(d);
     }
 
     function addWorkingDays(startDate, workingDays) {
@@ -1462,6 +1882,7 @@
     }
 
     function computeLocalCascade(items) {
+      const effectiveHoursPerDay = simHoursPerDay * simCapacityMult;
       const now = new Date();
       let anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       while (!isWorkingDay(anchor)) {
@@ -1478,12 +1899,13 @@
       Object.values(byResp).forEach(rItems => {
         rItems.forEach(it => {
           const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
-          const extDays = extHours > 0 ? Math.ceil(extHours / HORAS_POR_DIA) : 0;
+          const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
           if (it.Estado === "Terminado" || Number(it.Avance_Pct || 0) >= 100) {
             const regD = parseIsoDate(it.Fecha_Registro);
-            const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / HORAS_POR_DIA));
+            const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / effectiveHoursPerDay));
             const doneD = addWorkingDays(regD, diasUsados);
             const realD = extDays > 0 ? addWorkingDays(doneD, extDays) : doneD;
+            it.Fecha_Inicio_Calc = formatIsoDate(regD);
             it.Fecha_Base = formatIsoDate(doneD);
             it.Fecha_Tentativa = formatIsoDate(doneD);
             it.Desplazamiento_Dias = 0;
@@ -1498,7 +1920,7 @@
 
         baseSorted.forEach((it, idx) => {
           const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
-          const dias = Math.max(1, Math.ceil(hRest / HORAS_POR_DIA));
+          const dias = Math.max(1, Math.ceil(hRest / effectiveHoursPerDay));
           const startD = idx === 0 ? cursorBase : nextWorkingDay(cursorBase);
           const endD = addWorkingDays(startD, dias - 1);
           baseMap[it.ID_Req] = endD;
@@ -1515,22 +1937,70 @@
         let cursorPrio = new Date(anchor.getTime());
         prioSorted.forEach((it, idx) => {
           const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
-          const dias = Math.max(1, Math.ceil(hRest / HORAS_POR_DIA));
+          const dias = Math.max(1, Math.ceil(hRest / effectiveHoursPerDay));
           const startD = idx === 0 ? cursorPrio : nextWorkingDay(cursorPrio);
           const endD = addWorkingDays(startD, dias - 1);
           cursorPrio = endD;
 
           const dBase = baseMap[it.ID_Req];
           const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
-          const extDays = extHours > 0 ? Math.ceil(extHours / HORAS_POR_DIA) : 0;
+          const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
           const realEndD = extDays > 0 ? addWorkingDays(endD, extDays) : endD;
 
+          it.Fecha_Inicio_Calc = formatIsoDate(startD);
           it.Fecha_Base = formatIsoDate(dBase);
           it.Fecha_Tentativa = formatIsoDate(endD);
           it.Desplazamiento_Dias = workingDaysDiff(dBase, endD);
           it.Fecha_Real_Entrega = formatIsoDate(realEndD);
         });
       });
+    }
+
+    /* ==========================================================================
+       SIMULADOR "¿QUÉ PASA SI...?"
+       ========================================================================== */
+    function toggleSimulator() {
+      const bar = document.getElementById("simulatorBar");
+      const btn = document.getElementById("simToggleBtn");
+      const isOpen = bar.classList.toggle("open");
+      btn.classList.toggle("active-toggle", isOpen);
+    }
+
+    function setSimHours(h) {
+      simHoursPerDay = h;
+      document.querySelectorAll("[data-simh]").forEach(b => {
+        b.classList.toggle("active", Number(b.getAttribute("data-simh")) === h);
+      });
+      runSimulation();
+    }
+
+    function setSimCapacity(mult) {
+      simCapacityMult = mult;
+      document.querySelectorAll("[data-simcap]").forEach(b => {
+        b.classList.toggle("active", Number(b.getAttribute("data-simcap")) === mult);
+      });
+      runSimulation();
+    }
+
+    function resetSimulator() {
+      simHoursPerDay = 8.0;
+      simCapacityMult = 1.0;
+      document.querySelectorAll("[data-simh]").forEach(b => b.classList.toggle("active", Number(b.getAttribute("data-simh")) === 8));
+      document.querySelectorAll("[data-simcap]").forEach(b => b.classList.toggle("active", Number(b.getAttribute("data-simcap")) === 1));
+      runSimulation();
+    }
+
+    function runSimulation() {
+      const prev = snapshotDates();
+      computeLocalCascade(allData);
+      detectShiftedRows(prev);
+      const isDefault = simHoursPerDay === 8 && simCapacityMult === 1;
+      const lbl = document.getElementById("simStatusLabel");
+      lbl.textContent = isDefault
+        ? "Modo real (8h/día · 1x)"
+        : `Simulación activa (${simHoursPerDay}h/día · ${simCapacityMult}x = ${(simHoursPerDay * simCapacityMult).toFixed(0)}h/día)`;
+      lbl.className = isDefault ? "pill-tag tag-steel" : "pill-tag tag-ochre";
+      applyFilters();
     }
 
     /* ==========================================================================
@@ -1558,14 +2028,22 @@
       const next = root.getAttribute("data-theme") === "graphite" ? "paper" : "graphite";
       root.setAttribute("data-theme", next);
       localStorage.setItem("ing_bi_theme", next);
-      document.getElementById("themeBtn").textContent = next === "graphite" ? "Modo Papel Cálido" : "Modo Grafito";
+      document.getElementById("themeBtn").textContent = next === "graphite" ? "Papel Cálido" : "Grafito";
       renderCharts();
     }
 
     function initTheme() {
       const saved = localStorage.getItem("ing_bi_theme") || "graphite";
       document.documentElement.setAttribute("data-theme", saved);
-      document.getElementById("themeBtn").textContent = saved === "graphite" ? "Modo Papel Cálido" : "Modo Grafito";
+      document.getElementById("themeBtn").textContent = saved === "graphite" ? "Papel Cálido" : "Grafito";
+    }
+
+    function toggleCharts() {
+      const grid = document.getElementById("analyticsGrid");
+      const btn = document.getElementById("toggleChartsBtn");
+      const collapsed = grid.classList.toggle("collapsed");
+      btn.textContent = collapsed ? "Mostrar Gráficas" : "Ocultar Gráficas";
+      if (!collapsed) renderCharts();
     }
 
     function showToast(msg, isWarn = false) {
@@ -1574,6 +2052,34 @@
       el.className = isWarn ? "toast warn show" : "toast show";
       clearTimeout(el._timer);
       el._timer = setTimeout(() => el.classList.remove("show"), 3800);
+    }
+
+    function copyExecutiveReport() {
+      const lines = ["📊 *REPORTE DE AVANCE Y ENTREGAS - INGENIERÍA*", ""];
+      const byProj = {};
+      allData.forEach(r => {
+        if (!byProj[r.Proyecto]) byProj[r.Proyecto] = { est: 0, w: 0, maxDate: "" };
+        const h = Number(r.Horas_Est || 0);
+        byProj[r.Proyecto].est += h;
+        byProj[r.Proyecto].w += h * (Number(r.Avance_Pct || 0) / 100);
+        const f = r.Fecha_Real_Entrega || r.Fecha_Tentativa || "";
+        if (f > byProj[r.Proyecto].maxDate) byProj[r.Proyecto].maxDate = f;
+      });
+
+      Object.keys(byProj).forEach(p => {
+        const pct = byProj[p].est > 0 ? ((byProj[p].w / byProj[p].est) * 100).toFixed(1) : "0.0";
+        lines.push(`• *${p}*: ${pct}% avance ponderado | Cierre real est.: ${byProj[p].maxDate}`);
+      });
+
+      lines.push("", "*Detalle de procedimientos:*");
+      filteredData.forEach(r => {
+        const ext = Number(r.Horas_Demora_Externa || 0) > 0 ? ` (+${r.Horas_Demora_Externa}h demora ext.)` : "";
+        lines.push(`- [${r.ID_Req}] ${r.Descripcion}: ${r.Avance_Pct}% (${r.Estado}) -> Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
+      });
+
+      navigator.clipboard.writeText(lines.join("\n")).then(() => {
+        showToast("Resumen ejecutivo copiado al portapapeles (listo para pegar)");
+      });
     }
 
     /* ==========================================================================
@@ -1585,6 +2091,7 @@
         if (!res.ok) throw new Error("No backend");
         const json = await res.json();
         allData = json.requerimientos || [];
+        computeLocalCascade(allData);
         isBackendConnected = true;
 
         const dot = document.getElementById("syncDot");
@@ -1709,7 +2216,7 @@
 
       renderProjectStrip();
       renderCharts();
-      renderTable();
+      renderActiveView();
     }
 
     function renderProjectStrip() {
@@ -1785,18 +2292,18 @@
       btn.className = "project-card" + (selectedProject === key ? " active" : "");
       btn.onclick = () => selectProjectCard(key);
 
-      const radius = 19;
+      const radius = 18;
       const circumference = 2 * Math.PI * radius;
       const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference;
       const strokeColor = pct >= 100 ? "var(--tone-sage)" : pct > 0 ? "var(--tone-steel)" : "var(--tone-neutral)";
-      const extraBadge = extraHours > 0 ? `<span class="tag-extra">+${extraHours}h alcance</span>` : "";
-      const extBadge = extDelay > 0 ? `<span class="tag-ochre">+${extDelay}h ext.</span>` : "";
+      const extraBadge = extraHours > 0 ? `<span class="pill-tag tag-extra">+${extraHours}h alcance</span>` : "";
+      const extBadge = extDelay > 0 ? `<span class="pill-tag tag-ochre">+${extDelay}h ext.</span>` : "";
 
       btn.innerHTML = `
         <div class="ring-wrap">
-          <svg viewBox="0 0 48 48">
-            <circle cx="24" cy="24" r="${radius}" fill="none" stroke="var(--border-strong)" stroke-width="4" />
-            <circle cx="24" cy="24" r="${radius}" fill="none" stroke="${strokeColor}" stroke-width="4"
+          <svg viewBox="0 0 46 46">
+            <circle cx="23" cy="23" r="${radius}" fill="none" stroke="var(--border-strong)" stroke-width="4" />
+            <circle cx="23" cy="23" r="${radius}" fill="none" stroke="${strokeColor}" stroke-width="4"
               stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
           </svg>
           <span class="ring-text tabular">${Math.round(pct)}%</span>
@@ -1863,6 +2370,7 @@
     }
 
     function renderCharts() {
+      if (document.getElementById("analyticsGrid").classList.contains("collapsed")) return;
       if (!chartHours) initCharts();
 
       const gridColor = getCssVar("--chart-grid");
@@ -1890,12 +2398,12 @@
       chartHours.setOption({
         tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
         legend: { top: 0, right: 0, textStyle: { color: labelColor, fontSize: 11 } },
-        grid: { left: 12, right: 16, top: 38, bottom: 12, containLabel: true },
+        grid: { left: 10, right: 14, top: 36, bottom: 10, containLabel: true },
         xAxis: {
           type: "category",
           data: categories,
           axisLine: { lineStyle: { color: gridColor } },
-          axisLabel: { color: labelColor, fontSize: 11, interval: 0, rotate: categories.length > 4 ? 16 : 0 }
+          axisLabel: { color: labelColor, fontSize: 11, interval: 0 }
         },
         yAxis: {
           type: "value",
@@ -1904,7 +2412,7 @@
         },
         series: [
           {
-            name: "Plan Base (Est.)",
+            name: "Plan Base",
             type: "bar",
             stack: "estimado",
             barMaxWidth: 26,
@@ -1950,7 +2458,7 @@
       chartDistribution.setOption({
         tooltip: { trigger: "item", formatter: "{b}: <b>{c}h</b> ({d}%)" },
         legend: { bottom: 0, textStyle: { color: labelColor, fontSize: 11 } },
-        color: [steel, sage, ochre, terracotta, "#7E8591"],
+        color: [steel, sage, ochre, terracotta, "#848B96"],
         series: [{
           type: "pie",
           radius: ["52%", "74%"],
@@ -1975,12 +2483,28 @@
     }
 
     /* ==========================================================================
-       TABLA CON FECHA REAL DE ENTREGA, FESTIVOS COLOMBIA Y DEMORAS EXTERNAS
+       MULTI-VISTA: LISTA ZERO-SCROLL · CRONOGRAMA GANTT · TABLERO KANBAN
        ========================================================================== */
-    function renderTable() {
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
+    function setViewMode(mode) {
+      viewMode = mode;
+      document.getElementById("viewBtnList").classList.toggle("active", mode === "list");
+      document.getElementById("viewBtnGantt").classList.toggle("active", mode === "gantt");
+      document.getElementById("viewBtnKanban").classList.toggle("active", mode === "kanban");
 
+      document.getElementById("listViewContainer").style.display = mode === "list" ? "block" : "none";
+      document.getElementById("ganttViewContainer").classList.toggle("active", mode === "gantt");
+      document.getElementById("kanbanViewContainer").classList.toggle("active", mode === "kanban");
+      renderActiveView();
+    }
+
+    function renderActiveView() {
+      updateSummaryStrip();
+      if (viewMode === "list") renderTable();
+      else if (viewMode === "gantt") renderGantt();
+      else if (viewMode === "kanban") renderKanban();
+    }
+
+    function updateSummaryStrip() {
       const totEst = filteredData.reduce((s, r) => s + Number(r.Horas_Est || 0), 0);
       const totExt = filteredData.reduce((s, r) => s + Number(r.Horas_Demora_Externa || 0), 0);
       const totPend = filteredData.reduce((s, r) => {
@@ -1990,11 +2514,31 @@
       const viewPct = totEst > 0 ? (weighted / totEst) * 100 : 0;
 
       document.getElementById("tableSummaryStrip").innerHTML = `
-        <span><strong>${filteredData.length}</strong> procedimientos</span>
+        <span><strong>${filteredData.length}</strong> proc.</span>
         <span>Avance: <strong class="tabular">${viewPct.toFixed(1)}%</strong></span>
-        <span>Pendiente Ing.: <strong class="tabular">${totPend.toFixed(1)}h</strong></span>
-        ${totExt > 0 ? `<span class="tag-ochre tabular">+${totExt}h demora externa</span>` : ""}
+        <span>Pendiente: <strong class="tabular">${totPend.toFixed(1)}h</strong></span>
+        ${totExt > 0 ? `<span class="pill-tag tag-ochre tabular">+${totExt}h ext.</span>` : ""}
       `;
+    }
+
+    function getInitials(name) {
+      return String(name || "?")
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(w => w[0]?.toUpperCase() || "")
+        .join("");
+    }
+
+    function toggleDetailExpand(idReq) {
+      if (expandedDetails.has(idReq)) expandedDetails.delete(idReq);
+      else expandedDetails.add(idReq);
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
 
       filteredData.forEach(r => {
         const tr = document.createElement("tr");
@@ -2005,7 +2549,15 @@
         const prioVal = r.Prioridad || "3 - Normal";
         const prioClass = "prio-" + prioVal.charAt(0);
         const extraTag = r.Es_Adicional === "Sí"
-          ? `<span class="tag-extra" style="margin-left:6px;">+${r.Horas_Est}h alcance</span>`
+          ? `<span class="pill-tag tag-extra" style="margin-left:6px;">+${r.Horas_Est}h alcance</span>`
+          : "";
+
+        const detalleTxt = (r.Detalle || "").trim();
+        const isLong = detalleTxt.length > 110;
+        const isExpanded = expandedDetails.has(r.ID_Req);
+        const detailHtml = detalleTxt
+          ? `<div class="proc-sub ${isLong && !isExpanded ? "clamped" : ""}">${detalleTxt}</div>
+             ${isLong ? `<button type="button" class="expand-link" onclick="toggleDetailExpand('${r.ID_Req}')">${isExpanded ? "Ver menos" : "Ver detalle completo"}</button>` : ""}`
           : "";
 
         const extHours = Number(r.Horas_Demora_Externa || 0);
@@ -2020,86 +2572,237 @@
         const shift = Number(r.Desplazamiento_Dias || 0);
         const fTent = r.Fecha_Tentativa || "—";
         const fReal = r.Fecha_Real_Entrega || fTent;
+        const overrun = Number(r.Horas_Reales || 0) - Number(r.Horas_Est || 0);
 
         let metaLines = "";
         if (r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100) {
           metaLines = `<span style="color:var(--tone-sage);">Entregado</span>`;
         } else {
-          const parts = [];
           if (extHours > 0) {
-            parts.push(`<span class="tag-ochre tabular">+${extHours}h ext.</span>`);
-            parts.push(`<span>Ing: ${fTent}</span>`);
+            metaLines += `<span><span class="pill-tag tag-ochre tabular">+${extHours}h ext.</span> Ing: ${fTent}</span>`;
           } else {
+            const effH = simHoursPerDay * simCapacityMult;
             const hRest = Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
-            parts.push(`<span>${Math.max(1, Math.ceil(hRest / HORAS_POR_DIA))}d háb.</span>`);
+            metaLines += `<span>${Math.max(1, Math.ceil(hRest / effH))}d háb. rest.</span>`;
           }
-          if (shift > 0) parts.push(`<span class="tag-extra tabular">+${shift}d cola</span>`);
-          else if (shift < 0) parts.push(`<span class="tag-early tabular">${shift}d cola</span>`);
-          metaLines = parts.join(" ");
+          if (shift > 0) metaLines += `<span><span class="pill-tag tag-extra tabular">+${shift}d cola</span></span>`;
+          else if (shift < 0) metaLines += `<span><span class="pill-tag tag-early tabular">${shift}d cola</span></span>`;
         }
 
+        const overrunHtml = overrun > 0
+          ? `<span class="pill-tag tag-extra tabular" title="Horas reales superan estimadas">+${overrun}h</span>`
+          : "";
+
         tr.innerHTML = `
-          <td class="tabular" style="font-weight:600; color:var(--tone-steel);">${r.ID_Req}</td>
           <td>
-            <div style="font-weight:600; color:var(--ink-primary);">${r.Proyecto}</div>
-            <div class="proc-sub">${r.Fase_Etapa}</div>
-          </td>
-          <td style="max-width:330px;">
-            <div class="proc-title">${r.Descripcion}${extraTag}</div>
-            <div class="proc-sub">${r.Detalle || ""}</div>
-            ${commentBlock}
-          </td>
-          <td>${r.Solicitante}</td>
-          <td style="font-weight:500;">${r.Responsable}</td>
-          <td>
-            <select class="pill-select ${prioClass}" aria-label="Prioridad ${r.ID_Req}"
-              onchange="handleInlinePrioridadChange('${r.ID_Req}', this.value)">
-              <option value="1 - Urgente" ${prioVal === "1 - Urgente" ? "selected" : ""}>1 - Urgente</option>
-              <option value="2 - Alta" ${prioVal === "2 - Alta" ? "selected" : ""}>2 - Alta</option>
-              <option value="3 - Normal" ${prioVal === "3 - Normal" ? "selected" : ""}>3 - Normal</option>
-              <option value="4 - Baja" ${prioVal === "4 - Baja" ? "selected" : ""}>4 - Baja</option>
-            </select>
-          </td>
-          <td class="delivery-cell">
-            <span class="delivery-date tabular">${fReal}</span>
-            <div class="delivery-meta">${metaLines}</div>
-          </td>
-          <td>
-            <select class="pill-select ${statusClass}" aria-label="Estado ${r.ID_Req}"
-              onchange="handleInlineEstadoChange('${r.ID_Req}', this.value)">
-              <option value="Pendiente" ${r.Estado === "Pendiente" ? "selected" : ""}>Pendiente</option>
-              <option value="En Desarrollo" ${r.Estado === "En Desarrollo" ? "selected" : ""}>En Desarrollo</option>
-              <option value="Pausado" ${r.Estado === "Pausado" ? "selected" : ""}>Pausado</option>
-              <option value="Terminado" ${r.Estado === "Terminado" ? "selected" : ""}>Terminado</option>
-            </select>
-          </td>
-          <td>
-            <div class="progress-editor">
-              <input type="range" class="progress-slider" min="0" max="100" step="5"
-                value="${r.Avance_Pct}"
-                oninput="previewSliderPct('${r.ID_Req}', this.value)"
-                onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />
-              <span class="pct-box">
-                <input type="number" id="pct-num-${r.ID_Req}" min="0" max="100" step="1"
-                  value="${Math.round(r.Avance_Pct)}"
-                  onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />%
-              </span>
+            <div class="id-badge tabular">${r.ID_Req}</div>
+            <div class="proj-chip">${r.Proyecto} · <span style="font-weight:400; color:var(--ink-secondary);">${r.Fase_Etapa}</span></div>
+            <div class="person-line" title="Responsable: ${r.Responsable} | Solicita: ${r.Solicitante}">
+              <span class="avatar-mini">${getInitials(r.Responsable)}</span>
+              <span>${r.Responsable.split(" ")[0]} · <em>${r.Solicitante}</em></span>
             </div>
           </td>
-          <td class="hours-cell tabular">
-            <strong>${r.Horas_Reales}h</strong> / ${r.Horas_Est}h
+          <td>
+            <div class="proc-title">${r.Descripcion}${extraTag}</div>
+            ${detailHtml}
+            ${commentBlock}
           </td>
           <td>
-            <div class="row-actions">
-              <button class="icon-btn ext-btn" title="Añadir demora por motivo externo o comentario"
-                onclick="openDelayModal('${r.ID_Req}')">+ Demora / Nota</button>
+            <div class="stack-pills">
+              <select class="pill-select ${prioClass}" aria-label="Prioridad ${r.ID_Req}"
+                onchange="handleInlinePrioridadChange('${r.ID_Req}', this.value)">
+                <option value="1 - Urgente" ${prioVal === "1 - Urgente" ? "selected" : ""}>1 - Urgente</option>
+                <option value="2 - Alta" ${prioVal === "2 - Alta" ? "selected" : ""}>2 - Alta</option>
+                <option value="3 - Normal" ${prioVal === "3 - Normal" ? "selected" : ""}>3 - Normal</option>
+                <option value="4 - Baja" ${prioVal === "4 - Baja" ? "selected" : ""}>4 - Baja</option>
+              </select>
+              <select class="pill-select ${statusClass}" aria-label="Estado ${r.ID_Req}"
+                onchange="handleInlineEstadoChange('${r.ID_Req}', this.value)">
+                <option value="Pendiente" ${r.Estado === "Pendiente" ? "selected" : ""}>Pendiente</option>
+                <option value="En Desarrollo" ${r.Estado === "En Desarrollo" ? "selected" : ""}>En Desarrollo</option>
+                <option value="Pausado" ${r.Estado === "Pausado" ? "selected" : ""}>Pausado</option>
+                <option value="Terminado" ${r.Estado === "Terminado" ? "selected" : ""}>Terminado</option>
+              </select>
+            </div>
+          </td>
+          <td>
+            <div class="progress-stack">
+              <div class="progress-top-row">
+                <input type="range" class="progress-slider" min="0" max="100" step="5"
+                  value="${r.Avance_Pct}"
+                  oninput="previewSliderPct('${r.ID_Req}', this.value)"
+                  onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />
+                <span class="pct-box">
+                  <input type="number" id="pct-num-${r.ID_Req}" min="0" max="100" step="1"
+                    value="${Math.round(r.Avance_Pct)}"
+                    onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />%
+                </span>
+              </div>
+              <div class="quick-step-row">
+                <button type="button" class="step-chip" onclick="stepProgress('${r.ID_Req}', 10)">+10%</button>
+                <button type="button" class="step-chip" onclick="stepProgress('${r.ID_Req}', 25)">+25%</button>
+                <button type="button" class="step-chip" onclick="handleInlineAvanceChange('${r.ID_Req}', 100)">100%</button>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="delivery-date tabular">${fReal}</span>
+            <div class="delivery-meta">${metaLines}</div>
+            <div class="hours-line tabular">
+              <strong>${r.Horas_Reales}h</strong> / ${r.Horas_Est}h ${overrunHtml}
+            </div>
+          </td>
+          <td>
+            <div class="row-actions-col">
+              <button class="icon-btn ext-btn" onclick="openDelayModal('${r.ID_Req}')">+ Demora</button>
               <button class="icon-btn" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
-              <button class="icon-btn danger" title="Eliminar" onclick="deleteProc('${r.ID_Req}')">✕</button>
+              <button class="icon-btn danger" onclick="deleteProc('${r.ID_Req}')">Eliminar</button>
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function stepProgress(idReq, delta) {
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+      const next = Math.min(100, Math.max(0, Number(item.Avance_Pct || 0) + delta));
+      handleInlineAvanceChange(idReq, next);
+    }
+
+    /* ==========================================================================
+       VISTA GANTT CON CALENDARIO DE FESTIVOS DE COLOMBIA
+       ========================================================================== */
+    function renderGantt() {
+      const container = document.getElementById("ganttViewContainer");
+      if (!filteredData.length) {
+        container.innerHTML = `<p class="proc-sub">No hay procedimientos en el filtro actual.</p>`;
+        return;
+      }
+
+      const startDates = filteredData.map(r => parseIsoDate(r.Fecha_Inicio_Calc || r.Fecha_Registro));
+      const endDates = filteredData.map(r => parseIsoDate(r.Fecha_Real_Entrega || r.Fecha_Tentativa));
+      let minD = new Date(Math.min(...startDates.map(d => d.getTime())));
+      let maxD = new Date(Math.max(...endDates.map(d => d.getTime())));
+      // Añadir 2 días de margen visual
+      maxD = shiftDays(maxD, 2);
+
+      const daysList = [];
+      let curr = new Date(minD.getTime());
+      let safety = 0;
+      while (curr.getTime() <= maxD.getTime() && safety < 60) {
+        daysList.push(new Date(curr.getTime()));
+        curr.setDate(curr.getDate() + 1);
+        safety++;
+      }
+
+      const dayNames = ["D", "L", "M", "X", "J", "V", "S"];
+      const headCols = daysList.map(d => {
+        const hol = getHolidayName(d);
+        const isWknd = d.getDay() === 0 || d.getDay() === 6;
+        const cls = hol ? "gantt-day-col is-holiday" : (isWknd ? "gantt-day-col is-weekend" : "gantt-day-col");
+        const title = hol ? `Festivo Colombia: ${hol}` : formatIsoDate(d);
+        return `<th class="${cls}" title="${title}">
+          <div>${dayNames[d.getDay()]}</div>
+          <div class="tabular">${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}</div>
+        </th>`;
+      }).join("");
+
+      const bodyRows = filteredData.map(r => {
+        const sD = parseIsoDate(r.Fecha_Inicio_Calc || r.Fecha_Registro);
+        const tD = parseIsoDate(r.Fecha_Tentativa);
+        const rD = parseIsoDate(r.Fecha_Real_Entrega || r.Fecha_Tentativa);
+        const isDone = r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100;
+
+        const cells = daysList.map(d => {
+          const hol = getHolidayName(d);
+          const isWknd = d.getDay() === 0 || d.getDay() === 6;
+          const cls = hol ? "gantt-day-col is-holiday" : (isWknd ? "gantt-day-col is-weekend" : "gantt-day-col");
+
+          if (isWknd || hol) {
+            return `<td class="${cls}" title="${hol || "Fin de semana"}"></td>`;
+          }
+          const t = d.getTime();
+          if (t >= sD.getTime() && t <= tD.getTime()) {
+            const barCls = isDone ? "gantt-bar-done" : "gantt-bar-ing";
+            return `<td class="${cls}"><div class="${barCls}" title="Ejecución Ingeniería">${r.Avance_Pct}%</div></td>`;
+          }
+          if (t > tD.getTime() && t <= rD.getTime()) {
+            return `<td class="${cls}"><div class="gantt-bar-ext" title="Demora externa (+${r.Horas_Demora_Externa}h)">EXT</div></td>`;
+          }
+          return `<td class="${cls}"></td>`;
+        }).join("");
+
+        return `<tr>
+          <td class="task-col">
+            <div class="id-badge tabular">${r.ID_Req} · ${r.Prioridad}</div>
+            <div class="proc-title" style="font-size:0.8rem;">${r.Descripcion}</div>
+            <div class="proc-sub">${r.Responsable} · Entrega: <strong>${r.Fecha_Real_Entrega}</strong></div>
+          </td>
+          ${cells}
+        </tr>`;
+      }).join("");
+
+      container.innerHTML = `
+        <div class="gantt-legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-steel);"></span> Ejecución Ingeniería</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-ochre);"></span> Demora por Motivo Externo</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-sage);"></span> Terminado</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--holiday-bg); border:1px solid var(--tone-terracotta);"></span> Festivo Colombia / Fin de semana (saltado)</span>
+        </div>
+        <div class="gantt-grid-wrap">
+          <table class="gantt-table">
+            <thead>
+              <tr>
+                <th class="task-col">Procedimiento</th>
+                ${headCols}
+              </tr>
+            </thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       VISTA TABLERO KANBAN
+       ========================================================================== */
+    function renderKanban() {
+      const container = document.getElementById("kanbanViewContainer");
+      const columns = ["Pendiente", "En Desarrollo", "Pausado", "Terminado"];
+
+      container.innerHTML = columns.map(status => {
+        const items = filteredData.filter(r => r.Estado === status);
+        const cardsHtml = items.map(r => {
+          const ext = Number(r.Horas_Demora_Externa || 0);
+          return `<div class="kanban-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="id-badge tabular">${r.ID_Req}</span>
+              <span class="pill-tag prio-${(r.Prioridad || "3").charAt(0)}">${r.Prioridad}</span>
+            </div>
+            <div class="proc-title" style="font-size:0.82rem;">${r.Descripcion}</div>
+            <div class="proc-sub">${r.Proyecto} · ${r.Responsable}</div>
+            ${ext > 0 ? `<span class="pill-tag tag-ochre tabular">+${ext}h demora externa</span>` : ""}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.74rem;">
+              <span class="tabular">Entrega: <strong>${r.Fecha_Real_Entrega}</strong></span>
+              <span class="tabular"><strong>${r.Avance_Pct}%</strong></span>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+              <button class="icon-btn ext-btn" style="flex:1;" onclick="openDelayModal('${r.ID_Req}')">+ Demora</button>
+              <button class="icon-btn" style="flex:1;" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
+            </div>
+          </div>`;
+        }).join("");
+
+        return `<div class="kanban-col">
+          <div class="kanban-col-head">
+            <span>${status}</span>
+            <span class="pill-tag tag-steel tabular">${items.length}</span>
+          </div>
+          ${cardsHtml || `<div class="proc-sub" style="text-align:center; padding:18px 0;">Sin tareas</div>`}
+        </div>`;
+      }).join("");
     }
 
     function previewSliderPct(idReq, val) {
@@ -2168,7 +2871,7 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        showToast(`${idReq}: demora externa (+${horasExt}h) y comentario guardados en vista local`, true);
+        showToast(`${idReq}: demora externa (+${horasExt}h) guardada en vista local`, true);
         return;
       }
 
@@ -2188,6 +2891,7 @@
           return;
         }
         allData = data.requerimientos || allData;
+        computeLocalCascade(allData);
         detectShiftedRows(prevDates);
         applyFilters();
         if (data.file_info && data.file_info.last_modified) {
@@ -2230,6 +2934,7 @@
           return;
         }
         allData = data.requerimientos || allData;
+        computeLocalCascade(allData);
         detectShiftedRows(prevDates);
         applyFilters();
         if (data.file_info && data.file_info.last_modified) {
@@ -2289,6 +2994,7 @@
         }
         if (data.requerimientos) {
           allData = data.requerimientos;
+          computeLocalCascade(allData);
           detectShiftedRows(prevDates);
           applyFilters();
         }
@@ -2439,6 +3145,17 @@
         showToast(data.detail || "No se pudo eliminar", true);
       }
     }
+
+    // Atajos de teclado ergonómicos (/ para buscar, Esc para cerrar modales)
+    window.addEventListener("keydown", e => {
+      if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        document.getElementById("searchInput").focus();
+      } else if (e.key === "Escape") {
+        closeDelayModal();
+        closeDrawer();
+      }
+    });
 
     window.addEventListener("DOMContentLoaded", () => {
       initTheme();
