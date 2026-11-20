@@ -17,7 +17,7 @@ INDEX_FILE = BASE_DIR / "index.html"
 
 HORAS_POR_DIA = 8.0
 
-app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Alcance y Fechas Tentativas")
+app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Demoras Externas")
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +32,8 @@ HEADERS = [
     "ID_Req", "Proyecto", "Fase_Etapa", "Solicitante", "Responsable",
     "Descripcion", "Detalle", "Tipo", "Es_Adicional", "Horas_Est",
     "Horas_Reales", "Avance_Pct", "Estado", "Aprobado", "Fecha_Registro",
-    "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias"
+    "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias",
+    "Horas_Demora_Externa", "Comentarios_Externos", "Fecha_Real_Entrega"
 ]
 
 
@@ -52,6 +53,8 @@ class RequerimientoInput(BaseModel):
     Aprobado: str = "Pendiente"
     Fecha_Registro: Optional[str] = None
     Prioridad: str = "3 - Normal"
+    Horas_Demora_Externa: float = 0
+    Comentarios_Externos: Optional[str] = ""
 
 
 class ProgressPatchInput(BaseModel):
@@ -64,26 +67,100 @@ class PriorityPatchInput(BaseModel):
     Prioridad: str
 
 
-def add_business_days(start_date: date, business_days: int) -> date:
-    """Suma días hábiles (lunes a viernes) a una fecha base."""
+class ExternalDelayPatchInput(BaseModel):
+    Horas_Demora_Externa: float = 0
+    Comentarios_Externos: Optional[str] = ""
+
+
+# ==============================================================================
+# CALENDARIO LABORAL COLOMBIA (FINES DE SEMANA + FESTIVOS LEY EMILIANI)
+# ==============================================================================
+_HOLIDAY_CACHE: dict[int, dict[date, str]] = {}
+
+
+def easter_sunday(year: int) -> date:
+    """Calcula el Domingo de Pascua usando el algoritmo de Meeus/Jones/Butcher."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def next_monday(d: date) -> date:
+    if d.weekday() == 0:
+        return d
+    return d + timedelta(days=(7 - d.weekday()))
+
+
+def get_colombia_holidays(year: int) -> dict[date, str]:
+    """Devuelve todos los festivos oficiales de Colombia para el año dado."""
+    if year in _HOLIDAY_CACHE:
+        return _HOLIDAY_CACHE[year]
+    easter = easter_sunday(year)
+    holidays = {
+        date(year, 1, 1): "Año Nuevo",
+        date(year, 5, 1): "Día del Trabajo",
+        date(year, 7, 20): "Día de la Independencia",
+        date(year, 8, 7): "Batalla de Boyacá",
+        date(year, 12, 8): "Inmaculada Concepción",
+        date(year, 12, 25): "Navidad",
+        next_monday(date(year, 1, 6)): "Reyes Magos",
+        next_monday(date(year, 3, 19)): "San José",
+        next_monday(date(year, 6, 29)): "San Pedro y San Pablo",
+        next_monday(date(year, 8, 15)): "Asunción de la Virgen",
+        next_monday(date(year, 10, 12)): "Día de la Raza",
+        next_monday(date(year, 11, 1)): "Todos los Santos",
+        next_monday(date(year, 11, 11)): "Independencia de Cartagena",
+        easter - timedelta(days=3): "Jueves Santo",
+        easter - timedelta(days=2): "Viernes Santo",
+        next_monday(easter + timedelta(days=39)): "Ascensión del Señor",
+        next_monday(easter + timedelta(days=60)): "Corpus Christi",
+        next_monday(easter + timedelta(days=68)): "Sagrado Corazón de Jesús",
+    }
+    _HOLIDAY_CACHE[year] = dict(sorted(holidays.items()))
+    return _HOLIDAY_CACHE[year]
+
+
+def is_working_day(d: date) -> bool:
+    """True si es día hábil en Colombia (no sábado, no domingo, no festivo)."""
+    if d.weekday() >= 5:
+        return False
+    if d in get_colombia_holidays(d.year):
+        return False
+    return True
+
+
+def add_working_days(start_date: date, working_days: int) -> date:
+    """Suma N días hábiles saltando fines de semana y festivos de Colombia."""
     current = start_date
     added = 0
-    while added < business_days:
+    while added < working_days:
         current += timedelta(days=1)
-        if current.weekday() < 5:
+        if is_working_day(current):
             added += 1
     return current
 
 
-def next_business_day(d: date) -> date:
+def next_working_day(d: date) -> date:
     nxt = d + timedelta(days=1)
-    while nxt.weekday() >= 5:
+    while not is_working_day(nxt):
         nxt += timedelta(days=1)
     return nxt
 
 
-def business_days_diff(d_base: date, d_new: date) -> int:
-    """Calcula diferencia exacta en días hábiles entre Fecha_Base y Fecha_Tentativa."""
+def working_days_diff(d_base: date, d_new: date) -> int:
+    """Diferencia en días hábiles (sin fines de semana ni festivos) entre dos fechas."""
     if d_base == d_new:
         return 0
     step = 1 if d_new > d_base else -1
@@ -91,22 +168,23 @@ def business_days_diff(d_base: date, d_new: date) -> int:
     count = 0
     while curr != d_new:
         curr += timedelta(days=step)
-        if curr.weekday() < 5:
+        if is_working_day(curr):
             count += step
     return count
 
 
 def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = None) -> list[dict]:
     """
-    Calcula fechas tentativas de entrega por responsable (8h hábiles/día):
-    - Fecha_Base: orden original de creación (sin repriorizar).
-    - Fecha_Tentativa: cola ordenada por Prioridad ('1 - Urgente' -> '4 - Baja') y luego ID_Req.
-    - Desplazamiento_Dias: días hábiles desplazados (+N si se retrasó por otra prioridad, -N si se adelantó).
+    Calcula fechas por responsable saltando fines de semana y festivos de Colombia:
+    - Fecha_Base: orden natural de creación sin repriorizar.
+    - Fecha_Tentativa: cola ordenada por Prioridad ('1 - Urgente' -> '4 - Baja').
+    - Desplazamiento_Dias: días hábiles desplazados por cambios de prioridad.
+    - Fecha_Real_Entrega: Fecha_Tentativa + días hábiles por Horas_Demora_Externa.
     """
     if anchor_date is None:
         anchor_date = date.today()
-    while anchor_date.weekday() >= 5:
-        anchor_date = next_business_day(anchor_date)
+    while not is_working_day(anchor_date):
+        anchor_date = next_working_day(anchor_date)
 
     by_resp: dict[str, list[dict]] = {}
     for item in items:
@@ -115,6 +193,8 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
 
     for resp, r_items in by_resp.items():
         for it in r_items:
+            ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
+            ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
             if str(it.get("Estado", "")).strip() == "Terminado" or float(it.get("Avance_Pct", 0)) >= 100:
                 reg_str = str(it.get("Fecha_Registro") or anchor_date.isoformat())[:10]
                 try:
@@ -122,17 +202,19 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
                 except ValueError:
                     reg_d = anchor_date
                 dias_usados = max(1, math.ceil(float(it.get("Horas_Reales") or it.get("Horas_Est") or 8) / HORAS_POR_DIA))
-                done_d = add_business_days(reg_d, dias_usados).isoformat()
-                it["Fecha_Base"] = done_d
-                it["Fecha_Tentativa"] = done_d
+                done_d = add_working_days(reg_d, dias_usados)
+                real_d = add_working_days(done_d, ext_days) if ext_days > 0 else done_d
+                it["Fecha_Base"] = done_d.isoformat()
+                it["Fecha_Tentativa"] = done_d.isoformat()
                 it["Desplazamiento_Dias"] = 0
+                it["Fecha_Real_Entrega"] = real_d.isoformat()
 
         active_items = [
             it for it in r_items
             if str(it.get("Estado", "")).strip() != "Terminado" and float(it.get("Avance_Pct", 0)) < 100
         ]
 
-        # 1. Cronograma base (orden original por ID_Req)
+        # 1. Cronograma base (orden natural ID_Req)
         base_sorted = sorted(active_items, key=lambda x: str(x.get("ID_Req", "")))
         cursor_base = anchor_date
         base_dates_map: dict[str, date] = {}
@@ -141,12 +223,12 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             pct = float(it.get("Avance_Pct") or 0)
             h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
             dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
-            start_d = cursor_base if idx == 0 else next_business_day(cursor_base)
-            end_d = add_business_days(start_d, dias - 1)
+            start_d = cursor_base if idx == 0 else next_working_day(cursor_base)
+            end_d = add_working_days(start_d, dias - 1)
             base_dates_map[str(it["ID_Req"])] = end_d
             cursor_base = end_d
 
-        # 2. Cronograma priorizado en cascada
+        # 2. Cronograma priorizado en cascada + Demora Externa
         prio_sorted = sorted(
             active_items,
             key=lambda x: (str(x.get("Prioridad") or "3 - Normal"), str(x.get("ID_Req", "")))
@@ -157,14 +239,19 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             pct = float(it.get("Avance_Pct") or 0)
             h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
             dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
-            start_d = cursor_prio if idx == 0 else next_business_day(cursor_prio)
-            end_d = add_business_days(start_d, dias - 1)
+            start_d = cursor_prio if idx == 0 else next_working_day(cursor_prio)
+            end_d = add_working_days(start_d, dias - 1)
             cursor_prio = end_d
 
             d_base = base_dates_map[str(it["ID_Req"])]
+            ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
+            ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
+            real_end_d = add_working_days(end_d, ext_days) if ext_days > 0 else end_d
+
             it["Fecha_Base"] = d_base.isoformat()
             it["Fecha_Tentativa"] = end_d.isoformat()
-            it["Desplazamiento_Dias"] = business_days_diff(d_base, end_d)
+            it["Desplazamiento_Dias"] = working_days_diff(d_base, end_d)
+            it["Fecha_Real_Entrega"] = real_end_d.isoformat()
 
     return items
 
@@ -200,7 +287,7 @@ def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "a
 
 
 def ensure_excel_exists():
-    """Verifica que el Excel exista y tenga todas las columnas actualizadas."""
+    """Verifica que el Excel exista y migra columnas nuevas sin alterar los datos reales."""
     if not EXCEL_FILE.exists():
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -208,9 +295,9 @@ def ensure_excel_exists():
         ws.append(HEADERS)
         ws_cat = wb.create_sheet(title="Catalogos")
         ws_cat.append(["Proyectos", "Solicitantes", "Responsables", "Tipos", "Estados", "Prioridades"])
-        ws_cat.append(["T-LAB", "Laboratorio", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente", "1 - Urgente"])
-        ws_cat.append(["Catálogo Válvulas", "Comercial", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
-        ws_cat.append(["Portal Corporativo", "Almacén", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
+        ws_cat.append(["T-LAB", "Calidad", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente", "1 - Urgente"])
+        ws_cat.append(["Catálogo Válvulas", "Laboratorio", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
+        ws_cat.append(["Portal Corporativo", "Comercial", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
         ws_cat.append(["Infraestructura / BD", "Gerencia", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
         wb.save(EXCEL_FILE)
         return
@@ -219,7 +306,6 @@ def ensure_excel_exists():
     ws = wb["Requerimientos"]
     current_headers = [str(c.value).strip() if c.value else "" for c in ws[1]]
     if current_headers != HEADERS:
-        # Migración automática si falta Prioridad / Fecha_Tentativa / Desplazamiento_Dias
         old_rows = list(ws.iter_rows(min_row=2, values_only=True))
         ws.delete_rows(1, ws.max_row)
         ws.append(HEADERS)
@@ -229,6 +315,8 @@ def ensure_excel_exists():
                 continue
             d = dict(zip(current_headers, r))
             d.setdefault("Prioridad", "3 - Normal")
+            d.setdefault("Horas_Demora_Externa", 0)
+            d.setdefault("Comentarios_Externos", "")
             items.append(d)
         compute_cascade_schedule(items)
         for idx, it in enumerate(items, start=2):
@@ -245,18 +333,20 @@ def style_row(ws, row_idx: int):
     border_side = Side(style="thin", color="CBD5E1")
     cell_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
     fill = zebra_fill if row_idx % 2 == 0 else white_fill
-    ws.row_dimensions[row_idx].height = 30
+    ws.row_dimensions[row_idx].height = 34
 
+    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22}
     for col_idx in range(1, len(HEADERS) + 1):
         c = ws.cell(row=row_idx, column=col_idx)
         c.fill = fill
         c.border = cell_border
         c.font = Font(name="Calibri", size=10, color="0F172A")
-        if col_idx in [1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
-            c.alignment = Alignment(horizontal="center", vertical="center")
-        else:
-            c.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        if col_idx in [10, 11, 12]:
+        c.alignment = Alignment(
+            horizontal="center" if col_idx in center_cols else "left",
+            vertical="center",
+            wrap_text=True
+        )
+        if col_idx in {10, 11, 12, 20}:
             c.number_format = "#,##0"
         elif col_idx == 19:
             c.number_format = "+#,##0;-#,##0;0"
@@ -289,6 +379,8 @@ def read_items_from_ws(ws) -> list[dict]:
         item["Estado"] = str(item.get("Estado") or "Pendiente").strip()
         item["Prioridad"] = str(item.get("Prioridad") or "3 - Normal").strip()
         item["Desplazamiento_Dias"] = int(item.get("Desplazamiento_Dias") or 0)
+        item["Horas_Demora_Externa"] = float(item.get("Horas_Demora_Externa") or 0)
+        item["Comentarios_Externos"] = str(item.get("Comentarios_Externos") or "").strip()
         items.append(item)
     return items
 
@@ -350,10 +442,18 @@ def get_all_data():
                             if val_clean and val_clean not in catalogos[cat_headers[idx]]:
                                 catalogos[cat_headers[idx]].append(val_clean)
 
+        curr_year = date.today().year
+        festivos = {
+            d.isoformat(): name
+            for y in (curr_year, curr_year + 1)
+            for d, name in get_colombia_holidays(y).items()
+        }
+
         wb.close()
         return {
             "requerimientos": items,
             "catalogos": catalogos,
+            "festivos": festivos,
             "file_info": get_file_metadata()
         }
 
@@ -400,7 +500,9 @@ def create_requerimiento(payload: RequerimientoInput):
             "Estado": estado_final,
             "Aprobado": payload.Aprobado.strip(),
             "Fecha_Registro": fecha,
-            "Prioridad": payload.Prioridad.strip()
+            "Prioridad": payload.Prioridad.strip(),
+            "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
+            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()
         })
 
         compute_cascade_schedule(items)
@@ -413,8 +515,9 @@ def create_requerimiento(payload: RequerimientoInput):
             "ID_Req": new_id,
             "Estado": estado_final,
             "Avance_Pct": avance_final,
+            "requerimientos": items,
             "file_info": get_file_metadata(),
-            "message": "Procedimiento guardado y cronograma recalculado en Excel"
+            "message": "Procedimiento guardado y cronograma recalculado con festivos"
         }
 
 
@@ -445,7 +548,9 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "Avance_Pct": round(float(payload.Avance_Pct or 0), 1),
             "Estado": payload.Estado.strip(),
             "Aprobado": payload.Aprobado.strip(),
-            "Prioridad": payload.Prioridad.strip()
+            "Prioridad": payload.Prioridad.strip(),
+            "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
+            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()
         })
 
         compute_cascade_schedule(items)
@@ -456,6 +561,7 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
         return {
             "status": "ok",
             "ID_Req": id_req,
+            "requerimientos": items,
             "file_info": get_file_metadata(),
             "message": "Procedimiento actualizado y cronograma recalculado"
         }
@@ -463,7 +569,7 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
 
 @app.patch("/api/requerimientos/{id_req}/progreso")
 def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
-    """Actualiza Estado/% en línea y recalcula las fechas tentativas de toda la cola."""
+    """Actualiza Estado/% en línea y recalcula fechas saltando fines de semana y festivos."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -508,7 +614,7 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
 
 @app.patch("/api/requerimientos/{id_req}/prioridad")
 def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
-    """Cambia la prioridad de un procedimiento y desplaza en cascada las fechas de los demás entregables."""
+    """Cambia prioridad y desplaza en cascada las fechas de los demás entregables."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -531,7 +637,41 @@ def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
             "ID_Req": id_req,
             "Prioridad": target["Prioridad"],
             "Fecha_Tentativa": target["Fecha_Tentativa"],
+            "Fecha_Real_Entrega": target["Fecha_Real_Entrega"],
             "Desplazamiento_Dias": target["Desplazamiento_Dias"],
+            "requerimientos": items,
+            "file_info": get_file_metadata()
+        }
+
+
+@app.patch("/api/requerimientos/{id_req}/demora")
+def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput):
+    """Registra horas de demora externa y comentarios para ajustar Fecha_Real_Entrega."""
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
+
+        target = next((it for it in items if str(it.get("ID_Req")).strip() == id_req.strip()), None)
+        if not target:
+            wb.close()
+            raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
+
+        target["Horas_Demora_Externa"] = max(0.0, float(payload.Horas_Demora_Externa or 0))
+        target["Comentarios_Externos"] = (payload.Comentarios_Externos or "").strip()
+
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
+        save_workbook_safe(wb)
+        wb.close()
+
+        return {
+            "status": "ok",
+            "ID_Req": id_req,
+            "Horas_Demora_Externa": target["Horas_Demora_Externa"],
+            "Comentarios_Externos": target["Comentarios_Externos"],
+            "Fecha_Real_Entrega": target["Fecha_Real_Entrega"],
             "requerimientos": items,
             "file_info": get_file_metadata()
         }

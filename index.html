@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingeniería · Control de Procedimientos, Alcance y Fechas Tentativas</title>
+  <title>Ingeniería · Control de Procedimientos, Festivos y Entregas Reales</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2323272E'/><path d='M26 68V46M50 68V30M74 68V52' stroke='%234E9F78' stroke-width='10' stroke-linecap='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=vSAJ79AUo4SCysaHGq1FkdXsfxEi3XDehqQFUQkg6myQWJoOK31WCbIb-QyJ2RfxFOB9YumHXQOwLpGaL-xL8vNQPhTMtvixe0HORVhzhUHn17ez9PRw71X4ySh7H__FQM6uSnJzZ5uwNbR_c1o0c4ZSsuWymXEJajqu2ABLymhqTvYrosKv7RgFW9EHApeVlgOB0kzGzo7e7jEKknWiak4SzVvQimCXJsKI9ocA0Rr8ROZ47iB83YnJFb6I6j-fVIM9H_xitCQTv1PUn-UKCGAj3JPFnLt_aChgvR7UMAujcrWwzQSR_PVMN4XELVCa" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=H2BILbh90oLNEUgPOKUilJn7DzBA_YYdsL-sVDh0kuosDR8WqZTuVd9UgDyxuCaaeeEu4wcrQd6Bv9oU0jOjRJoh2fV2nYwsWQx5E6bfI4ccYcKcoZlUAjYlTOEo851JGtV4m8zkax0VKHRMv2Zt9SyG1qUcmy5ZlmPDtbliMUYGNnK6O7mL2_neipanfQPQjPmkf8Djq_YyEqjr5bHSa4L9fQ8qW73M6uXBXQ56gm6KGQWGBbWvG1aBoPuwREnuO2ukHuPo6ua6-zHZlqU4pIG8Mw6kQFBphv4R8Is6P6HqgU5ROdqC8-25IdfuXQp6" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
        1. DESIGN TOKENS — LOW-GLARE ARCHITECTURAL PALETTE (GRAFITO & PAPEL CÁLIDO)
@@ -127,7 +127,7 @@
     }
 
     .topbar-inner {
-      max-width: 1480px;
+      max-width: 1500px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -140,6 +140,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     .workspace-mark {
@@ -260,7 +261,7 @@
        3. CONTAINER & PROJECT PORTFOLIO CAPSULES
        ========================================================================== */
     .container {
-      max-width: 1480px;
+      max-width: 1500px;
       margin: 0 auto;
       padding: 22px 28px 64px;
       display: flex;
@@ -287,7 +288,7 @@
 
     .projects-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
       gap: 12px;
     }
 
@@ -368,6 +369,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: wrap;
     }
 
     .tag-extra {
@@ -379,6 +381,17 @@
       font-weight: 600;
       background: var(--tone-terracotta-soft);
       color: var(--tone-terracotta);
+    }
+
+    .tag-ochre {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 0.69rem;
+      font-weight: 600;
+      background: var(--tone-ochre-soft);
+      color: var(--tone-ochre);
     }
 
     .tag-early {
@@ -512,7 +525,7 @@
 
     .chart-box {
       width: 100%;
-      height: 240px;
+      height: 235px;
     }
 
     /* ==========================================================================
@@ -539,7 +552,7 @@
     .summary-strip {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       font-size: 0.78rem;
       color: var(--ink-secondary);
       flex-wrap: wrap;
@@ -612,7 +625,24 @@
       line-height: 1.35;
     }
 
-    /* Inline Pill Selects (Estado y Prioridad) */
+    .ext-comment-box {
+      margin-top: 6px;
+      padding: 6px 9px;
+      border-radius: 6px;
+      background: var(--tone-ochre-soft);
+      border-left: 2px solid var(--tone-ochre);
+      font-size: 0.73rem;
+      color: var(--ink-primary);
+      line-height: 1.35;
+    }
+
+    .ext-comment-label {
+      font-weight: 600;
+      color: var(--tone-ochre);
+      margin-right: 4px;
+    }
+
+    /* Inline Pill Selects */
     .pill-select {
       appearance: none;
       -webkit-appearance: none;
@@ -679,18 +709,18 @@
       border-color: rgba(126, 133, 145, 0.2);
     }
 
-    /* Inline Editable Progress Slider + Input */
+    /* Inline Progress Editor */
     .progress-editor {
       display: flex;
       align-items: center;
       gap: 8px;
-      min-width: 155px;
+      min-width: 150px;
     }
 
     .progress-slider {
       -webkit-appearance: none;
       appearance: none;
-      width: 88px;
+      width: 82px;
       height: 6px;
       border-radius: 999px;
       background: var(--bg-elevated);
@@ -744,7 +774,7 @@
 
     .delivery-date {
       font-weight: 600;
-      font-size: 0.8rem;
+      font-size: 0.81rem;
       color: var(--ink-primary);
       display: block;
     }
@@ -756,6 +786,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      flex-wrap: wrap;
     }
 
     .hours-cell {
@@ -772,6 +803,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      flex-wrap: nowrap;
     }
 
     .icon-btn {
@@ -785,11 +817,22 @@
       font-family: inherit;
       cursor: pointer;
       transition: all var(--transition-fast);
+      white-space: nowrap;
     }
 
     .icon-btn:hover {
       color: var(--ink-primary);
       border-color: var(--border-strong);
+    }
+
+    .icon-btn.ext-btn {
+      color: var(--tone-ochre);
+      border-color: rgba(212, 150, 59, 0.25);
+    }
+
+    .icon-btn.ext-btn:hover {
+      background: var(--tone-ochre-soft);
+      border-color: var(--tone-ochre);
     }
 
     .icon-btn.danger:hover {
@@ -798,24 +841,67 @@
     }
 
     /* ==========================================================================
-       7. SLIDE-OVER DRAWER & TOAST
+       7. MODAL RÁPIDO DE DEMORA EXTERNA Y COMENTARIOS + SLIDE-OVER DRAWER
        ========================================================================== */
+    .modal-backdrop,
     .drawer-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(10, 12, 15, 0.58);
+      background: rgba(10, 12, 15, 0.62);
       backdrop-filter: blur(3px);
       z-index: 200;
       display: none;
-      justify-content: flex-end;
     }
 
     .drawer-overlay.open {
       display: flex;
+      justify-content: flex-end;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .modal-card {
+      width: 460px;
+      max-width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-drawer);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-secondary);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .preset-chip:hover {
+      color: var(--ink-primary);
+      border-color: var(--tone-ochre);
     }
 
     .drawer-panel {
-      width: 500px;
+      width: 510px;
       max-width: 100%;
       height: 100%;
       background: var(--bg-surface);
@@ -936,7 +1022,7 @@
       <div class="workspace-id">
         <div class="workspace-mark">ING</div>
         <div>
-          <div class="workspace-title">Control de Procedimientos, Alcance y Fechas Tentativas</div>
+          <div class="workspace-title">Control de Procedimientos, Festivos y Entregas Reales</div>
         </div>
         <div class="sync-pill" id="syncPill">
           <span class="sync-dot" id="syncDot"></span>
@@ -954,11 +1040,11 @@
   </header>
 
   <main class="container">
-    <!-- 1. PORTAFOLIO DE PROYECTOS CON FECHA TENTATIVA DE CIERRE -->
+    <!-- 1. PORTAFOLIO DE PROYECTOS CON FECHA REAL ESTIMADA -->
     <section>
       <div class="section-label-row">
-        <span class="section-eyebrow">Avance Ponderado y Entrega Tentativa por Proyecto (Clic para filtrar)</span>
-        <span class="section-eyebrow tabular" id="globalSummaryTag">Capacidad: 8h hábiles/día · 0 proyectos</span>
+        <span class="section-eyebrow">Avance Ponderado y Entrega Real Estimada (Clic para filtrar)</span>
+        <span class="section-eyebrow tabular" id="globalSummaryTag">Calendario Colombia · Sáb/Dom y Festivos excluidos · 8h/día</span>
       </div>
       <div class="projects-strip" id="projectsStrip"></div>
     </section>
@@ -966,7 +1052,7 @@
     <!-- 2. BARRA DE FILTROS CONTEXTUALES -->
     <section class="filter-toolbar">
       <div class="filter-controls">
-        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, ID o fase..." oninput="applyFilters()" />
+        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, comentario o ID..." oninput="applyFilters()" />
 
         <select id="fResponsable" class="select-clean" onchange="applyFilters()">
           <option value="TODOS">Responsable: Todos</option>
@@ -1007,8 +1093,8 @@
       <article class="card">
         <div class="card-head">
           <div>
-            <h3 class="card-title">Horas Planeadas, Cambios de Alcance y Ejecución Real</h3>
-            <p class="card-desc">Comparativo del tiempo base frente a requerimientos adicionales</p>
+            <h3 class="card-title">Horas Planeadas, Cambios, Ejecución Real y Demoras Externas</h3>
+            <p class="card-desc">Incluye tiempo adicional por motivos externos que frenan la entrega</p>
           </div>
           <div class="segmented">
             <button class="seg-btn active" id="btnAxisProy" onclick="setBarAxis('Proyecto')">Por Proyecto</button>
@@ -1033,12 +1119,12 @@
       </article>
     </section>
 
-    <!-- 4. MESA DE TRABAJO DE PROCEDIMIENTOS (PRIORIDAD + FECHA TENTATIVA EN CASCADA) -->
+    <!-- 4. MESA DE TRABAJO DE PROCEDIMIENTOS -->
     <section class="workbench-card">
       <div class="workbench-header">
         <div>
-          <h3 class="card-title">Cronograma Dinámico de Procedimientos</h3>
-          <p class="card-desc">Al priorizar un entregable como Urgente o Alta, las fechas tentativas de los demás procedimientos del responsable se recalculan automáticamente</p>
+          <h3 class="card-title">Cronograma Dinámico (Festivos Colombia + Demoras Externas)</h3>
+          <p class="card-desc">Ajusta prioridades, estado, avance o registra demoras por motivos externos con su comentario explicativo</p>
         </div>
         <div class="summary-strip" id="tableSummaryStrip"></div>
       </div>
@@ -1049,11 +1135,11 @@
             <tr>
               <th>ID</th>
               <th>Proyecto · Fase</th>
-              <th>Procedimiento / Descripción</th>
+              <th>Procedimiento y Comentarios Externos</th>
               <th>Solicita</th>
               <th>Responsable</th>
-              <th>Prioridad (Reordena Cola)</th>
-              <th>Fecha Tentativa Entrega</th>
+              <th>Prioridad</th>
+              <th>Fecha Real Entrega</th>
               <th>Estado</th>
               <th>Avance %</th>
               <th>Horas</th>
@@ -1066,7 +1152,48 @@
     </section>
   </main>
 
-  <!-- SLIDE-OVER DRAWER PARA CREAR / EDITAR PROCEDIMIENTO -->
+  <!-- MODAL RÁPIDO: DEMORA EXTERNA Y COMENTARIOS -->
+  <div class="modal-backdrop" id="delayModal" onclick="if(event.target===this) closeDelayModal()">
+    <div class="modal-card">
+      <div class="drawer-top">
+        <h2 id="delayModalTitle">Motivos Externos y Comentarios</h2>
+        <button class="btn btn-ghost" onclick="closeDelayModal()">Cerrar</button>
+      </div>
+
+      <form id="delayForm" onsubmit="submitDelayModal(event)">
+        <input type="hidden" id="delayIdReq" value="" />
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div class="field">
+            <label>Tiempo adicional por motivos externos (Horas hábiles)</label>
+            <input type="number" id="delayHoursInput" min="0" step="1" value="0" required />
+            <div class="chip-row" style="margin-top:4px;">
+              <button type="button" class="preset-chip" onclick="setDelayHours(0)">0h (Sin demora)</button>
+              <button type="button" class="preset-chip" onclick="addDelayHours(4)">+4h (½ día)</button>
+              <button type="button" class="preset-chip" onclick="addDelayHours(8)">+8h (1 día)</button>
+              <button type="button" class="preset-chip" onclick="addDelayHours(16)">+16h (2 días)</button>
+              <button type="button" class="preset-chip" onclick="addDelayHours(24)">+24h (3 días)</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Comentarios / Justificación del motivo externo</label>
+            <textarea id="delayCommentInput" placeholder="Ej. Esperando aprobación de cliente, validación de dominio SMTP con proveedor externo, pruebas pendientes de usuario..."></textarea>
+          </div>
+
+          <div class="sync-hint">
+            Estas horas se suman sobre la fecha tentativa de ingeniería respetando fines de semana y festivos oficiales de Colombia para calcular la <strong>Fecha Real de Entrega</strong>.
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+            <button type="button" class="btn btn-ghost" onclick="closeDelayModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Demora y Recalcular</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SLIDE-OVER DRAWER PARA CREAR / EDITAR PROCEDIMIENTO COMPLETO -->
   <aside class="drawer-overlay" id="drawerOverlay" onclick="if(event.target===this) closeDrawer()">
     <div class="drawer-panel">
       <div class="drawer-top">
@@ -1085,12 +1212,12 @@
 
           <div class="field">
             <label>Fase / Etapa *</label>
-            <input type="text" id="inpFase" required placeholder="Ej. Etapa 2 - Método Directo" />
+            <input type="text" id="inpFase" required placeholder="Ej. Etapa 1" />
           </div>
 
           <div class="field">
             <label>Quién Solicita (Área) *</label>
-            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Laboratorio" />
+            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Calidad" />
             <datalist id="dlSolicitantes"></datalist>
           </div>
 
@@ -1106,8 +1233,8 @@
           </div>
 
           <div class="field span-2">
-            <label>Detalle Explicativo (Lenguaje claro para Gerencia)</label>
-            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento y su impacto..."></textarea>
+            <label>Detalle Explicativo</label>
+            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento y su alcance..."></textarea>
           </div>
 
           <div class="field">
@@ -1154,6 +1281,11 @@
           </div>
 
           <div class="field">
+            <label>Horas Demora Externa</label>
+            <input type="number" id="inpHorasExt" min="0" step="1" value="0" />
+          </div>
+
+          <div class="field">
             <label>Tipo</label>
             <select id="inpTipo">
               <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
@@ -1163,16 +1295,17 @@
             </select>
           </div>
 
-          <div class="field">
+          <div class="field span-2">
+            <label>Comentarios por Motivos Externos</label>
+            <textarea id="inpComentariosExt" placeholder="Notas sobre dependencias externas, aprobaciones pendientes o bloqueos..."></textarea>
+          </div>
+
+          <div class="field span-2">
             <label>Aprobación</label>
             <select id="inpAprobado">
               <option value="Aprobado">Aprobado</option>
               <option value="Pendiente">Pendiente de Aprobación</option>
             </select>
-          </div>
-
-          <div class="sync-hint">
-            La fecha tentativa de entrega se calcula automáticamente a razón de 8 horas hábiles por día (lunes a viernes) sobre las horas pendientes y desplaza los entregables de menor prioridad.
           </div>
         </div>
 
@@ -1187,21 +1320,15 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // Únicamente los requerimientos reales cargados por el usuario
     const FALLBACK_DATA = [
-      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Base de Datos", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Diseño del modelo relacional y creación física de tablas en SQL Server", Detalle: "Crear y configurar las tablas físicas en el servidor de base de datos para almacenar mediciones sin usar Excel.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 40, Horas_Reales: 38, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado", Fecha_Registro: "2026-11-02", Prioridad: "2 - Alta" },
-      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Directo", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Motor de cálculo para calibración e incertidumbres (Directo)", Detalle: "Automatizar todos los cálculos matemáticos del método directo que antes se hacían en Excel.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 80, Horas_Reales: 65, Avance_Pct: 80, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-04", Prioridad: "2 - Alta" },
-      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Directo", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Vistas web interactivas con validación en tiempo real (Directo)", Detalle: "Pantallas intuitivas para que los técnicos ingresen mediciones del método directo sin errores.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 80, Horas_Reales: 40, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-06", Prioridad: "3 - Normal" },
-      { ID_Req: "ING-004", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Certificados", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Generación automática del certificado PDF y envío a carpeta OPI", Detalle: "Ensamblar el certificado PDF y guardarlo automáticamente en la carpeta OPI en la nube.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 40, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Aprobado", Fecha_Registro: "2026-11-08", Prioridad: "3 - Normal" },
-      { ID_Req: "ING-005", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Indirecto", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Motor de cálculo e incertidumbres (Método Indirecto)", Detalle: "Fórmulas matemáticas específicas del método indirecto.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 60, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Pendiente", Fecha_Registro: "2026-11-10", Prioridad: "3 - Normal" },
-      { ID_Req: "ING-006", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Método Indirecto", Solicitante: "Laboratorio", Responsable: "Samantha Moreno", Descripcion: "Vistas web interactivas (Método Indirecto)", Detalle: "Formularios web adaptados a las variables del método indirecto.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 60, Horas_Reales: 0, Avance_Pct: 0, Estado: "Pendiente", Aprobado: "Pendiente", Fecha_Registro: "2026-11-10", Prioridad: "3 - Normal" },
-      { ID_Req: "ING-007", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1 - Soporte Producción", Solicitante: "Comercial", Responsable: "Samantha Moreno", Descripcion: "Filtro adicional por lote OPI en panel comercial", Detalle: "Solicitud posterior al cierre de Etapa 1 para filtrar lotes de válvulas.", Tipo: "Mejora", Es_Adicional: "Sí", Horas_Est: 16, Horas_Reales: 18, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado", Fecha_Registro: "2026-11-12", Prioridad: "2 - Alta" },
-      { ID_Req: "ING-008", Proyecto: "T-LAB", Fase_Etapa: "Etapa 2 - Certificados", Solicitante: "Gerencia", Responsable: "Samantha Moreno", Descripcion: "Comparativo histórico de calibraciones previas en PDF", Detalle: "Requerimiento nuevo fuera del alcance inicial para incluir gráfica histórica.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 24, Horas_Reales: 8, Avance_Pct: 30, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-15", Prioridad: "1 - Urgente" },
-      { ID_Req: "ING-009", Proyecto: "Catálogo Válvulas", Fase_Etapa: "Fase 1 - Selección", Solicitante: "Ingeniería", Responsable: "Carlos Ramírez", Descripcion: "Validación de presiones máximas y mínimas por brida", Detalle: "Normalizar rangos de presión y temperatura en válvulas de control.", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 32, Horas_Reales: 30, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado", Fecha_Registro: "2026-11-03", Prioridad: "3 - Normal" },
-      { ID_Req: "ING-010", Proyecto: "Catálogo Válvulas", Fase_Etapa: "Fase 2 - Reglas Técnicas", Solicitante: "Comercial", Responsable: "Andrés Gómez", Descripcion: "Inclusión de kits de reparación especiales fuera de estándar", Detalle: "Requerimiento agregado por comercial a mitad de fase para cotizar sellos especiales.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 20, Horas_Reales: 15, Avance_Pct: 75, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-14", Prioridad: "2 - Alta" },
-      { ID_Req: "ING-011", Proyecto: "Portal Corporativo", Fase_Etapa: "Fase 1 - Tarjetas QR", Solicitante: "Comercial", Responsable: "Samantha Moreno", Descripcion: "Actualización dinámica de contactos vCard y descarga de QR", Detalle: "Editar datos comerciales conservando el mismo código QR impreso.", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 24, Horas_Reales: 24, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado", Fecha_Registro: "2026-11-01", Prioridad: "3 - Normal" }
+      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
+      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
+      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" }
     ];
 
     const HORAS_POR_DIA = 8.0;
+    const holidayCache = {};
     let allData = [];
     let filteredData = [];
     let shiftedIds = new Set();
@@ -1214,8 +1341,48 @@
     let chartDistribution = null;
 
     /* ==========================================================================
-       MOTOR DE CÁLCULO DE FECHAS TENTATIVAS EN CASCADA (ESPEJO DE PYTHON)
+       CALENDARIO LABORAL COLOMBIA (FINES DE SEMANA + FESTIVOS LEY EMILIANI)
        ========================================================================== */
+    function easterSunday(year) {
+      const a = year % 19;
+      const b = Math.floor(year / 100);
+      const c = year % 100;
+      const d = Math.floor(b / 4);
+      const e = b % 4;
+      const f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4);
+      const k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const month = Math.floor((h + l - 7 * m + 114) / 31);
+      const day = ((h + l - 7 * m + 114) % 31) + 1;
+      return new Date(year, month - 1, day);
+    }
+
+    function nextMonday(d) {
+      const copy = new Date(d.getTime());
+      const wd = copy.getDay(); // 0=Dom, 1=Lun .. 6=Sab
+      if (wd === 1) return copy;
+      const add = wd === 0 ? 1 : (8 - wd);
+      copy.setDate(copy.getDate() + add);
+      return copy;
+    }
+
+    function shiftDays(d, days) {
+      const copy = new Date(d.getTime());
+      copy.setDate(copy.getDate() + days);
+      return copy;
+    }
+
+    function formatIsoDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
     function parseIsoDate(str) {
       const clean = String(str || "").slice(0, 10);
       const parts = clean.split("-").map(Number);
@@ -1226,34 +1393,61 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
-    function formatIsoDate(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
+    function getColombiaHolidaysSet(year) {
+      if (holidayCache[year]) return holidayCache[year];
+      const easter = easterSunday(year);
+      const list = [
+        new Date(year, 0, 1),
+        new Date(year, 4, 1),
+        new Date(year, 6, 20),
+        new Date(year, 7, 7),
+        new Date(year, 11, 8),
+        new Date(year, 11, 25),
+        nextMonday(new Date(year, 0, 6)),
+        nextMonday(new Date(year, 2, 19)),
+        nextMonday(new Date(year, 5, 29)),
+        nextMonday(new Date(year, 7, 15)),
+        nextMonday(new Date(year, 9, 12)),
+        nextMonday(new Date(year, 10, 1)),
+        nextMonday(new Date(year, 10, 11)),
+        shiftDays(easter, -3),
+        shiftDays(easter, -2),
+        nextMonday(shiftDays(easter, 39)),
+        nextMonday(shiftDays(easter, 60)),
+        nextMonday(shiftDays(easter, 68))
+      ];
+      const set = new Set(list.map(formatIsoDate));
+      holidayCache[year] = set;
+      return set;
     }
 
-    function addBusinessDays(startDate, businessDays) {
+    function isWorkingDay(d) {
+      const wd = d.getDay();
+      if (wd === 0 || wd === 6) return false;
+      const iso = formatIsoDate(d);
+      return !getColombiaHolidaysSet(d.getFullYear()).has(iso);
+    }
+
+    function addWorkingDays(startDate, workingDays) {
       const curr = new Date(startDate.getTime());
       let added = 0;
-      while (added < businessDays) {
+      while (added < workingDays) {
         curr.setDate(curr.getDate() + 1);
-        const wd = curr.getDay();
-        if (wd !== 0 && wd !== 6) added++;
+        if (isWorkingDay(curr)) added++;
       }
       return curr;
     }
 
-    function nextBusinessDay(d) {
+    function nextWorkingDay(d) {
       const nxt = new Date(d.getTime());
       nxt.setDate(nxt.getDate() + 1);
-      while (nxt.getDay() === 0 || nxt.getDay() === 6) {
+      while (!isWorkingDay(nxt)) {
         nxt.setDate(nxt.getDate() + 1);
       }
       return nxt;
     }
 
-    function businessDaysDiff(dBase, dNew) {
+    function workingDaysDiff(dBase, dNew) {
       const t1 = dBase.getTime();
       const t2 = dNew.getTime();
       if (t1 === t2) return 0;
@@ -1262,8 +1456,7 @@
       let count = 0;
       while (curr.getTime() !== t2) {
         curr.setDate(curr.getDate() + step);
-        const wd = curr.getDay();
-        if (wd !== 0 && wd !== 6) count += step;
+        if (isWorkingDay(curr)) count += step;
       }
       return count;
     }
@@ -1271,8 +1464,8 @@
     function computeLocalCascade(items) {
       const now = new Date();
       let anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      while (anchor.getDay() === 0 || anchor.getDay() === 6) {
-        anchor = nextBusinessDay(anchor);
+      while (!isWorkingDay(anchor)) {
+        anchor = nextWorkingDay(anchor);
       }
 
       const byResp = {};
@@ -1284,13 +1477,17 @@
 
       Object.values(byResp).forEach(rItems => {
         rItems.forEach(it => {
+          const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
+          const extDays = extHours > 0 ? Math.ceil(extHours / HORAS_POR_DIA) : 0;
           if (it.Estado === "Terminado" || Number(it.Avance_Pct || 0) >= 100) {
             const regD = parseIsoDate(it.Fecha_Registro);
             const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / HORAS_POR_DIA));
-            const doneStr = formatIsoDate(addBusinessDays(regD, diasUsados));
-            it.Fecha_Base = doneStr;
-            it.Fecha_Tentativa = doneStr;
+            const doneD = addWorkingDays(regD, diasUsados);
+            const realD = extDays > 0 ? addWorkingDays(doneD, extDays) : doneD;
+            it.Fecha_Base = formatIsoDate(doneD);
+            it.Fecha_Tentativa = formatIsoDate(doneD);
             it.Desplazamiento_Dias = 0;
+            it.Fecha_Real_Entrega = formatIsoDate(realD);
           }
         });
 
@@ -1302,8 +1499,8 @@
         baseSorted.forEach((it, idx) => {
           const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
           const dias = Math.max(1, Math.ceil(hRest / HORAS_POR_DIA));
-          const startD = idx === 0 ? cursorBase : nextBusinessDay(cursorBase);
-          const endD = addBusinessDays(startD, dias - 1);
+          const startD = idx === 0 ? cursorBase : nextWorkingDay(cursorBase);
+          const endD = addWorkingDays(startD, dias - 1);
           baseMap[it.ID_Req] = endD;
           cursorBase = endD;
         });
@@ -1319,14 +1516,19 @@
         prioSorted.forEach((it, idx) => {
           const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
           const dias = Math.max(1, Math.ceil(hRest / HORAS_POR_DIA));
-          const startD = idx === 0 ? cursorPrio : nextBusinessDay(cursorPrio);
-          const endD = addBusinessDays(startD, dias - 1);
+          const startD = idx === 0 ? cursorPrio : nextWorkingDay(cursorPrio);
+          const endD = addWorkingDays(startD, dias - 1);
           cursorPrio = endD;
 
           const dBase = baseMap[it.ID_Req];
+          const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
+          const extDays = extHours > 0 ? Math.ceil(extHours / HORAS_POR_DIA) : 0;
+          const realEndD = extDays > 0 ? addWorkingDays(endD, extDays) : endD;
+
           it.Fecha_Base = formatIsoDate(dBase);
           it.Fecha_Tentativa = formatIsoDate(endD);
-          it.Desplazamiento_Dias = businessDaysDiff(dBase, endD);
+          it.Desplazamiento_Dias = workingDaysDiff(dBase, endD);
+          it.Fecha_Real_Entrega = formatIsoDate(realEndD);
         });
       });
     }
@@ -1489,13 +1691,12 @@
         if (prio !== "TODOS" && (r.Prioridad || "3 - Normal") !== prio) return false;
         if (est !== "TODOS" && r.Estado !== est) return false;
         if (q) {
-          const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle}`.toLowerCase();
+          const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle} ${r.Comentarios_Externos || ""}`.toLowerCase();
           if (!text.includes(q)) return false;
         }
         return true;
       });
 
-      // Ordenar tabla por Responsable / Prioridad / ID_Req para visualizar la cola real de ejecución
       filteredData.sort((a, b) => {
         const doneA = a.Estado === "Terminado" ? 1 : 0;
         const doneB = b.Estado === "Terminado" ? 1 : 0;
@@ -1519,35 +1720,37 @@
       let globalEst = 0;
       let globalWeighted = 0;
       let globalExtra = 0;
-      let globalMaxDate = "";
+      let globalExtDelay = 0;
+      let globalMaxRealDate = "";
 
       allData.forEach(r => {
         const hEst = Number(r.Horas_Est || 0);
         const pct = Number(r.Avance_Pct || 0);
         const isExtra = r.Es_Adicional === "Sí";
-        const fTent = String(r.Fecha_Tentativa || "");
+        const extH = Number(r.Horas_Demora_Externa || 0);
+        const fReal = String(r.Fecha_Real_Entrega || r.Fecha_Tentativa || "");
 
         globalEst += hEst;
         globalWeighted += hEst * (pct / 100);
         if (isExtra) globalExtra += hEst;
-        if (fTent && fTent > globalMaxDate) globalMaxDate = fTent;
+        globalExtDelay += extH;
+        if (fReal && fReal > globalMaxRealDate) globalMaxRealDate = fReal;
 
         if (!byProject[r.Proyecto]) {
-          byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, count: 0, maxDate: "" };
+          byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, extDelay: 0, count: 0, maxDate: "" };
         }
         byProject[r.Proyecto].est += hEst;
         byProject[r.Proyecto].weighted += hEst * (pct / 100);
         if (isExtra) byProject[r.Proyecto].extra += hEst;
+        byProject[r.Proyecto].extDelay += extH;
         byProject[r.Proyecto].count += 1;
-        if (fTent && fTent > byProject[r.Proyecto].maxDate) {
-          byProject[r.Proyecto].maxDate = fTent;
+        if (fReal && fReal > byProject[r.Proyecto].maxDate) {
+          byProject[r.Proyecto].maxDate = fReal;
         }
       });
 
       const globalPct = globalEst > 0 ? (globalWeighted / globalEst) * 100 : 0;
       const projectNames = Object.keys(byProject);
-      document.getElementById("globalSummaryTag").textContent =
-        `Capacidad: 8h hábiles/día · ${projectNames.length} proyectos · ${globalEst}h totales`;
 
       strip.appendChild(createProjectCapsule({
         key: "TODOS",
@@ -1555,8 +1758,9 @@
         pct: globalPct,
         hours: globalEst,
         extraHours: globalExtra,
+        extDelay: globalExtDelay,
         count: allData.length,
-        maxDate: globalMaxDate
+        maxDate: globalMaxRealDate
       }));
 
       projectNames.forEach(name => {
@@ -1568,13 +1772,14 @@
           pct,
           hours: info.est,
           extraHours: info.extra,
+          extDelay: info.extDelay,
           count: info.count,
           maxDate: info.maxDate
         }));
       });
     }
 
-    function createProjectCapsule({ key, title, pct, hours, extraHours, count, maxDate }) {
+    function createProjectCapsule({ key, title, pct, hours, extraHours, extDelay, count, maxDate }) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "project-card" + (selectedProject === key ? " active" : "");
@@ -1584,7 +1789,8 @@
       const circumference = 2 * Math.PI * radius;
       const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference;
       const strokeColor = pct >= 100 ? "var(--tone-sage)" : pct > 0 ? "var(--tone-steel)" : "var(--tone-neutral)";
-      const extraBadge = extraHours > 0 ? `<span class="tag-extra">+${extraHours}h extra</span>` : "";
+      const extraBadge = extraHours > 0 ? `<span class="tag-extra">+${extraHours}h alcance</span>` : "";
+      const extBadge = extDelay > 0 ? `<span class="tag-ochre">+${extDelay}h ext.</span>` : "";
 
       btn.innerHTML = `
         <div class="ring-wrap">
@@ -1604,9 +1810,10 @@
             <span>·</span>
             <span>${count} proc.</span>
             ${extraBadge}
+            ${extBadge}
           </div>
           <div class="project-delivery tabular">
-            <span>Cierre est.: <strong>${maxDate || "—"}</strong></span>
+            <span>Entrega real est.: <strong>${maxDate || "—"}</strong></span>
           </div>
         </div>
       `;
@@ -1669,12 +1876,14 @@
       const groupMap = {};
       filteredData.forEach(r => {
         const key = r[barAxis] || "Sin definir";
-        if (!groupMap[key]) groupMap[key] = { orig: 0, extra: 0, real: 0 };
+        if (!groupMap[key]) groupMap[key] = { orig: 0, extra: 0, real: 0, extDelay: 0 };
         const est = Number(r.Horas_Est || 0);
         const real = Number(r.Horas_Reales || 0);
+        const ext = Number(r.Horas_Demora_Externa || 0);
         if (r.Es_Adicional === "Sí") groupMap[key].extra += est;
         else groupMap[key].orig += est;
         groupMap[key].real += real;
+        groupMap[key].extDelay += ext;
       });
 
       const categories = Object.keys(groupMap);
@@ -1703,12 +1912,20 @@
             itemStyle: { color: steel }
           },
           {
-            name: "Cambios Extra (Est.)",
+            name: "Cambios Alcance",
             type: "bar",
             stack: "estimado",
             barMaxWidth: 26,
             data: categories.map(k => groupMap[k].extra),
-            itemStyle: { color: terracotta, borderRadius: [4, 4, 0, 0] }
+            itemStyle: { color: terracotta }
+          },
+          {
+            name: "Demora Externa",
+            type: "bar",
+            stack: "estimado",
+            barMaxWidth: 26,
+            data: categories.map(k => groupMap[k].extDelay),
+            itemStyle: { color: ochre, borderRadius: [4, 4, 0, 0] }
           },
           {
             name: "Horas Reales",
@@ -1758,14 +1975,14 @@
     }
 
     /* ==========================================================================
-       TABLA CON PRIORIDAD Y FECHA TENTATIVA DE ENTREGA EN CASCADA
+       TABLA CON FECHA REAL DE ENTREGA, FESTIVOS COLOMBIA Y DEMORAS EXTERNAS
        ========================================================================== */
     function renderTable() {
       const tbody = document.getElementById("tableBody");
       tbody.innerHTML = "";
 
       const totEst = filteredData.reduce((s, r) => s + Number(r.Horas_Est || 0), 0);
-      const totReal = filteredData.reduce((s, r) => s + Number(r.Horas_Reales || 0), 0);
+      const totExt = filteredData.reduce((s, r) => s + Number(r.Horas_Demora_Externa || 0), 0);
       const totPend = filteredData.reduce((s, r) => {
         return s + Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
       }, 0);
@@ -1775,7 +1992,8 @@
       document.getElementById("tableSummaryStrip").innerHTML = `
         <span><strong>${filteredData.length}</strong> procedimientos</span>
         <span>Avance: <strong class="tabular">${viewPct.toFixed(1)}%</strong></span>
-        <span>Pendiente: <strong class="tabular">${totPend.toFixed(1)}h</strong> (${Math.ceil(totPend / HORAS_POR_DIA)}d háb.)</span>
+        <span>Pendiente Ing.: <strong class="tabular">${totPend.toFixed(1)}h</strong></span>
+        ${totExt > 0 ? `<span class="tag-ochre tabular">+${totExt}h demora externa</span>` : ""}
       `;
 
       filteredData.forEach(r => {
@@ -1787,20 +2005,37 @@
         const prioVal = r.Prioridad || "3 - Normal";
         const prioClass = "prio-" + prioVal.charAt(0);
         const extraTag = r.Es_Adicional === "Sí"
-          ? `<span class="tag-extra" style="margin-left:6px;">+${r.Horas_Est}h extra</span>`
+          ? `<span class="tag-extra" style="margin-left:6px;">+${r.Horas_Est}h alcance</span>`
+          : "";
+
+        const extHours = Number(r.Horas_Demora_Externa || 0);
+        const extComment = (r.Comentarios_Externos || "").trim();
+        const commentBlock = (extComment || extHours > 0)
+          ? `<div class="ext-comment-box">
+               <span class="ext-comment-label">${extHours > 0 ? `+${extHours}h demora externa:` : "Nota:"}</span>
+               ${extComment || "Tiempo adicional registrado por factor externo."}
+             </div>`
           : "";
 
         const shift = Number(r.Desplazamiento_Dias || 0);
-        let shiftHtml = "";
+        const fTent = r.Fecha_Tentativa || "—";
+        const fReal = r.Fecha_Real_Entrega || fTent;
+
+        let metaLines = "";
         if (r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100) {
-          shiftHtml = `<span style="color:var(--tone-sage);">Entregado</span>`;
-        } else if (shift > 0) {
-          shiftHtml = `<span class="tag-extra tabular" title="Desplazado por priorización de otra tarea">+${shift}d háb.</span>`;
-        } else if (shift < 0) {
-          shiftHtml = `<span class="tag-early tabular" title="Adelantado por alta prioridad">${shift}d háb.</span>`;
+          metaLines = `<span style="color:var(--tone-sage);">Entregado</span>`;
         } else {
-          const hRest = Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
-          shiftHtml = `<span>${Math.max(1, Math.ceil(hRest / HORAS_POR_DIA))}d háb. rest.</span>`;
+          const parts = [];
+          if (extHours > 0) {
+            parts.push(`<span class="tag-ochre tabular">+${extHours}h ext.</span>`);
+            parts.push(`<span>Ing: ${fTent}</span>`);
+          } else {
+            const hRest = Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
+            parts.push(`<span>${Math.max(1, Math.ceil(hRest / HORAS_POR_DIA))}d háb.</span>`);
+          }
+          if (shift > 0) parts.push(`<span class="tag-extra tabular">+${shift}d cola</span>`);
+          else if (shift < 0) parts.push(`<span class="tag-early tabular">${shift}d cola</span>`);
+          metaLines = parts.join(" ");
         }
 
         tr.innerHTML = `
@@ -1809,9 +2044,10 @@
             <div style="font-weight:600; color:var(--ink-primary);">${r.Proyecto}</div>
             <div class="proc-sub">${r.Fase_Etapa}</div>
           </td>
-          <td style="max-width:300px;">
+          <td style="max-width:330px;">
             <div class="proc-title">${r.Descripcion}${extraTag}</div>
             <div class="proc-sub">${r.Detalle || ""}</div>
+            ${commentBlock}
           </td>
           <td>${r.Solicitante}</td>
           <td style="font-weight:500;">${r.Responsable}</td>
@@ -1825,8 +2061,8 @@
             </select>
           </td>
           <td class="delivery-cell">
-            <span class="delivery-date tabular">${r.Fecha_Tentativa || "—"}</span>
-            <div class="delivery-meta">${shiftHtml}</div>
+            <span class="delivery-date tabular">${fReal}</span>
+            <div class="delivery-meta">${metaLines}</div>
           </td>
           <td>
             <select class="pill-select ${statusClass}" aria-label="Estado ${r.ID_Req}"
@@ -1855,6 +2091,8 @@
           </td>
           <td>
             <div class="row-actions">
+              <button class="icon-btn ext-btn" title="Añadir demora por motivo externo o comentario"
+                onclick="openDelayModal('${r.ID_Req}')">+ Demora / Nota</button>
               <button class="icon-btn" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
               <button class="icon-btn danger" title="Eliminar" onclick="deleteProc('${r.ID_Req}')">✕</button>
             </div>
@@ -1871,20 +2109,99 @@
 
     function snapshotDates() {
       const map = {};
-      allData.forEach(r => { map[r.ID_Req] = r.Fecha_Tentativa; });
+      allData.forEach(r => { map[r.ID_Req] = `${r.Fecha_Tentativa}|${r.Fecha_Real_Entrega}`; });
       return map;
     }
 
     function detectShiftedRows(prevMap) {
       shiftedIds = new Set();
       allData.forEach(r => {
-        if (prevMap[r.ID_Req] && prevMap[r.ID_Req] !== r.Fecha_Tentativa) {
+        const curr = `${r.Fecha_Tentativa}|${r.Fecha_Real_Entrega}`;
+        if (prevMap[r.ID_Req] && prevMap[r.ID_Req] !== curr) {
           shiftedIds.add(r.ID_Req);
         }
       });
       setTimeout(() => { shiftedIds.clear(); }, 1500);
     }
 
+    /* ==========================================================================
+       MODAL RÁPIDO: DEMORA POR MOTIVOS EXTERNOS Y COMENTARIOS
+       ========================================================================== */
+    function openDelayModal(idReq) {
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+      document.getElementById("delayIdReq").value = idReq;
+      document.getElementById("delayModalTitle").textContent = `${idReq} · Demora Externa y Comentarios`;
+      document.getElementById("delayHoursInput").value = Number(item.Horas_Demora_Externa || 0);
+      document.getElementById("delayCommentInput").value = item.Comentarios_Externos || "";
+      document.getElementById("delayModal").classList.add("open");
+    }
+
+    function closeDelayModal() {
+      document.getElementById("delayModal").classList.remove("open");
+    }
+
+    function setDelayHours(h) {
+      document.getElementById("delayHoursInput").value = h;
+    }
+
+    function addDelayHours(delta) {
+      const inp = document.getElementById("delayHoursInput");
+      inp.value = Math.max(0, Number(inp.value || 0) + delta);
+    }
+
+    async function submitDelayModal(e) {
+      e.preventDefault();
+      const idReq = document.getElementById("delayIdReq").value;
+      const horasExt = Math.max(0, Number(document.getElementById("delayHoursInput").value || 0));
+      const commentExt = (document.getElementById("delayCommentInput").value || "").trim();
+
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+
+      const prevDates = snapshotDates();
+      item.Horas_Demora_Externa = horasExt;
+      item.Comentarios_Externos = commentExt;
+      computeLocalCascade(allData);
+      detectShiftedRows(prevDates);
+      closeDelayModal();
+      applyFilters();
+
+      if (!isBackendConnected) {
+        showToast(`${idReq}: demora externa (+${horasExt}h) y comentario guardados en vista local`, true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/requerimientos/${idReq}/demora`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            Horas_Demora_Externa: horasExt,
+            Comentarios_Externos: commentExt
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || "Error al guardar demora externa", true);
+          await loadData(false);
+          return;
+        }
+        allData = data.requerimientos || allData;
+        detectShiftedRows(prevDates);
+        applyFilters();
+        if (data.file_info && data.file_info.last_modified) {
+          document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
+        }
+        showToast(`${idReq}: nueva fecha real de entrega ${data.Fecha_Real_Entrega}`);
+      } catch (err) {
+        showToast("Error de conexión al guardar en Excel", true);
+      }
+    }
+
+    /* ==========================================================================
+       EDICIONES EN LÍNEA (PRIORIDAD, ESTADO, % AVANCE)
+       ========================================================================== */
     async function handleInlinePrioridadChange(idReq, nuevaPrioridad) {
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
@@ -1896,7 +2213,7 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        showToast(`${idReq} movido a ${nuevaPrioridad}: fechas de entregables recalculadas`, true);
+        showToast(`${idReq} -> ${nuevaPrioridad}: fechas recalculadas con festivos`, true);
         return;
       }
 
@@ -1918,7 +2235,7 @@
         if (data.file_info && data.file_info.last_modified) {
           document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
         }
-        showToast(`${idReq} -> ${nuevaPrioridad}. Fechas tentativas recalculadas (${shiftedIds.size} movidas)`);
+        showToast(`${idReq} -> ${nuevaPrioridad}. Fechas actualizadas en Excel`);
       } catch (e) {
         showToast("Error de conexión al guardar prioridad", true);
       }
@@ -1978,14 +2295,14 @@
         if (data.file_info && data.file_info.last_modified) {
           document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
         }
-        showToast(`${idReq} actualizado (${data.Estado} · ${data.Avance_Pct}%) y cronograma recalculado`);
+        showToast(`${idReq} actualizado (${data.Estado} · ${data.Avance_Pct}%) en Excel`);
       } catch (e) {
         showToast("Error de conexión al guardar en Excel", true);
       }
     }
 
     /* ==========================================================================
-       DRAWER CREAR / EDITAR
+       DRAWER CREAR / EDITAR COMPLETO
        ========================================================================== */
     function onDrawerEstadoChange() {
       const est = document.getElementById("inpEstado").value;
@@ -2016,6 +2333,8 @@
         document.getElementById("inpHorasReales").value = req.Horas_Reales;
         document.getElementById("inpEstado").value = req.Estado;
         document.getElementById("inpAvance").value = req.Avance_Pct;
+        document.getElementById("inpHorasExt").value = Number(req.Horas_Demora_Externa || 0);
+        document.getElementById("inpComentariosExt").value = req.Comentarios_Externos || "";
         document.getElementById("inpTipo").value = req.Tipo;
         document.getElementById("inpAprobado").value = req.Aprobado || "Aprobado";
       } else {
@@ -2025,6 +2344,7 @@
         document.getElementById("inpPrioridad").value = "3 - Normal";
         document.getElementById("inpEstado").value = "Pendiente";
         document.getElementById("inpAvance").value = 0;
+        document.getElementById("inpHorasExt").value = 0;
       }
     }
 
@@ -2053,6 +2373,8 @@
         Horas_Reales: Number(document.getElementById("inpHorasReales").value || 0),
         Estado: document.getElementById("inpEstado").value,
         Avance_Pct: Number(document.getElementById("inpAvance").value || 0),
+        Horas_Demora_Externa: Number(document.getElementById("inpHorasExt").value || 0),
+        Comentarios_Externos: document.getElementById("inpComentariosExt").value,
         Tipo: document.getElementById("inpTipo").value,
         Aprobado: document.getElementById("inpAprobado").value
       };
@@ -2072,7 +2394,7 @@
         closeDrawer();
         populateDropdowns();
         applyFilters();
-        showToast("Guardado en memoria local (inicia app.py para escribir en disco)", true);
+        showToast("Guardado en vista local (inicia app.py para escribir en disco)", true);
         return;
       }
 
@@ -2089,7 +2411,7 @@
         await loadData(false);
         detectShiftedRows(prevDates);
         applyFilters();
-        showToast(`${data.ID_Req || editId} guardado y fechas tentativas actualizadas`);
+        showToast(`${data.ID_Req || editId} guardado y fechas actualizadas`);
       } else {
         showToast(data.detail || "Error al guardar en Excel", true);
       }
