@@ -1,21 +1,23 @@
 import os
+import math
 import threading
 from pathlib import Path
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-# Ruta absoluta garantizada junto a app.py (evita crear archivos duplicados si se ejecuta desde otra carpeta)
 BASE_DIR = Path(__file__).resolve().parent
 EXCEL_FILE = BASE_DIR / "requerimientos_ingenieria.xlsx"
 INDEX_FILE = BASE_DIR / "index.html"
 
-app = FastAPI(title="Ingeniería BI - Control de Procedimientos y Alcance")
+HORAS_POR_DIA = 8.0
+
+app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Alcance y Fechas Tentativas")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,7 +31,8 @@ excel_lock = threading.Lock()
 HEADERS = [
     "ID_Req", "Proyecto", "Fase_Etapa", "Solicitante", "Responsable",
     "Descripcion", "Detalle", "Tipo", "Es_Adicional", "Horas_Est",
-    "Horas_Reales", "Avance_Pct", "Estado", "Aprobado", "Fecha_Registro"
+    "Horas_Reales", "Avance_Pct", "Estado", "Aprobado", "Fecha_Registro",
+    "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias"
 ]
 
 
@@ -48,6 +51,7 @@ class RequerimientoInput(BaseModel):
     Estado: str = "Pendiente"
     Aprobado: str = "Pendiente"
     Fecha_Registro: Optional[str] = None
+    Prioridad: str = "3 - Normal"
 
 
 class ProgressPatchInput(BaseModel):
@@ -56,19 +60,117 @@ class ProgressPatchInput(BaseModel):
     Horas_Reales: Optional[float] = None
 
 
+class PriorityPatchInput(BaseModel):
+    Prioridad: str
+
+
+def add_business_days(start_date: date, business_days: int) -> date:
+    """Suma días hábiles (lunes a viernes) a una fecha base."""
+    current = start_date
+    added = 0
+    while added < business_days:
+        current += timedelta(days=1)
+        if current.weekday() < 5:
+            added += 1
+    return current
+
+
+def next_business_day(d: date) -> date:
+    nxt = d + timedelta(days=1)
+    while nxt.weekday() >= 5:
+        nxt += timedelta(days=1)
+    return nxt
+
+
+def business_days_diff(d_base: date, d_new: date) -> int:
+    """Calcula diferencia exacta en días hábiles entre Fecha_Base y Fecha_Tentativa."""
+    if d_base == d_new:
+        return 0
+    step = 1 if d_new > d_base else -1
+    curr = d_base
+    count = 0
+    while curr != d_new:
+        curr += timedelta(days=step)
+        if curr.weekday() < 5:
+            count += step
+    return count
+
+
+def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = None) -> list[dict]:
+    """
+    Calcula fechas tentativas de entrega por responsable (8h hábiles/día):
+    - Fecha_Base: orden original de creación (sin repriorizar).
+    - Fecha_Tentativa: cola ordenada por Prioridad ('1 - Urgente' -> '4 - Baja') y luego ID_Req.
+    - Desplazamiento_Dias: días hábiles desplazados (+N si se retrasó por otra prioridad, -N si se adelantó).
+    """
+    if anchor_date is None:
+        anchor_date = date.today()
+    while anchor_date.weekday() >= 5:
+        anchor_date = next_business_day(anchor_date)
+
+    by_resp: dict[str, list[dict]] = {}
+    for item in items:
+        resp = str(item.get("Responsable") or "Sin asignar").strip()
+        by_resp.setdefault(resp, []).append(item)
+
+    for resp, r_items in by_resp.items():
+        for it in r_items:
+            if str(it.get("Estado", "")).strip() == "Terminado" or float(it.get("Avance_Pct", 0)) >= 100:
+                reg_str = str(it.get("Fecha_Registro") or anchor_date.isoformat())[:10]
+                try:
+                    reg_d = date.fromisoformat(reg_str)
+                except ValueError:
+                    reg_d = anchor_date
+                dias_usados = max(1, math.ceil(float(it.get("Horas_Reales") or it.get("Horas_Est") or 8) / HORAS_POR_DIA))
+                done_d = add_business_days(reg_d, dias_usados).isoformat()
+                it["Fecha_Base"] = done_d
+                it["Fecha_Tentativa"] = done_d
+                it["Desplazamiento_Dias"] = 0
+
+        active_items = [
+            it for it in r_items
+            if str(it.get("Estado", "")).strip() != "Terminado" and float(it.get("Avance_Pct", 0)) < 100
+        ]
+
+        # 1. Cronograma base (orden original por ID_Req)
+        base_sorted = sorted(active_items, key=lambda x: str(x.get("ID_Req", "")))
+        cursor_base = anchor_date
+        base_dates_map: dict[str, date] = {}
+        for idx, it in enumerate(base_sorted):
+            h_est = float(it.get("Horas_Est") or 0)
+            pct = float(it.get("Avance_Pct") or 0)
+            h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
+            dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
+            start_d = cursor_base if idx == 0 else next_business_day(cursor_base)
+            end_d = add_business_days(start_d, dias - 1)
+            base_dates_map[str(it["ID_Req"])] = end_d
+            cursor_base = end_d
+
+        # 2. Cronograma priorizado en cascada
+        prio_sorted = sorted(
+            active_items,
+            key=lambda x: (str(x.get("Prioridad") or "3 - Normal"), str(x.get("ID_Req", "")))
+        )
+        cursor_prio = anchor_date
+        for idx, it in enumerate(prio_sorted):
+            h_est = float(it.get("Horas_Est") or 0)
+            pct = float(it.get("Avance_Pct") or 0)
+            h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
+            dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
+            start_d = cursor_prio if idx == 0 else next_business_day(cursor_prio)
+            end_d = add_business_days(start_d, dias - 1)
+            cursor_prio = end_d
+
+            d_base = base_dates_map[str(it["ID_Req"])]
+            it["Fecha_Base"] = d_base.isoformat()
+            it["Fecha_Tentativa"] = end_d.isoformat()
+            it["Desplazamiento_Dias"] = business_days_diff(d_base, end_d)
+
+    return items
+
+
 def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "auto") -> tuple[str, float]:
-    """
-    Sincroniza bidireccionalmente el Estado del procedimiento y su % de Avance:
-    - Si cambia Estado:
-        * Pendiente -> 0%
-        * En Desarrollo -> 50% (si estaba en 0% o 100%; conserva valores intermedios personalizados)
-        * Pausado -> conserva valor actual (o 25% si estaba en 0%)
-        * Terminado -> 100%
-    - Si cambia Avance_Pct:
-        * 0% -> Pendiente
-        * 1% a 99% -> En Desarrollo (salvo que estuviera Pausado)
-        * 100% -> Terminado
-    """
+    """Sincroniza bidireccionalmente Estado y % Avance del procedimiento."""
     estado_clean = (estado or "Pendiente").strip()
     pct = max(0.0, min(100.0, float(avance or 0)))
 
@@ -98,20 +200,42 @@ def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "a
 
 
 def ensure_excel_exists():
-    """Verifica que el archivo Excel exista en BASE_DIR con sus pestañas base."""
-    if EXCEL_FILE.exists():
+    """Verifica que el Excel exista y tenga todas las columnas actualizadas."""
+    if not EXCEL_FILE.exists():
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Requerimientos"
+        ws.append(HEADERS)
+        ws_cat = wb.create_sheet(title="Catalogos")
+        ws_cat.append(["Proyectos", "Solicitantes", "Responsables", "Tipos", "Estados", "Prioridades"])
+        ws_cat.append(["T-LAB", "Laboratorio", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente", "1 - Urgente"])
+        ws_cat.append(["Catálogo Válvulas", "Comercial", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
+        ws_cat.append(["Portal Corporativo", "Almacén", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
+        ws_cat.append(["Infraestructura / BD", "Gerencia", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
+        wb.save(EXCEL_FILE)
         return
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Requerimientos"
-    ws.append(HEADERS)
-    ws_cat = wb.create_sheet(title="Catalogos")
-    ws_cat.append(["Proyectos", "Solicitantes", "Responsables", "Tipos", "Estados"])
-    ws_cat.append(["T-LAB", "Laboratorio", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente"])
-    ws_cat.append(["Catálogo Válvulas", "Comercial", "Carlos Ramírez", "Mejora", "En Desarrollo"])
-    ws_cat.append(["Portal Corporativo", "Almacén", "Andrés Gómez", "Corrección", "Terminado"])
-    ws_cat.append(["Infraestructura / BD", "Gerencia", "Luisa Fernanda Ortiz", "Soporte", "Pausado"])
-    wb.save(EXCEL_FILE)
+
+    wb = openpyxl.load_workbook(EXCEL_FILE)
+    ws = wb["Requerimientos"]
+    current_headers = [str(c.value).strip() if c.value else "" for c in ws[1]]
+    if current_headers != HEADERS:
+        # Migración automática si falta Prioridad / Fecha_Tentativa / Desplazamiento_Dias
+        old_rows = list(ws.iter_rows(min_row=2, values_only=True))
+        ws.delete_rows(1, ws.max_row)
+        ws.append(HEADERS)
+        items = []
+        for r in old_rows:
+            if not any(r):
+                continue
+            d = dict(zip(current_headers, r))
+            d.setdefault("Prioridad", "3 - Normal")
+            items.append(d)
+        compute_cascade_schedule(items)
+        for idx, it in enumerate(items, start=2):
+            ws.append([it.get(h, "") for h in HEADERS])
+            style_row(ws, idx)
+        wb.save(EXCEL_FILE)
+    wb.close()
 
 
 def style_row(ws, row_idx: int):
@@ -128,23 +252,52 @@ def style_row(ws, row_idx: int):
         c.fill = fill
         c.border = cell_border
         c.font = Font(name="Calibri", size=10, color="0F172A")
-        if col_idx in [1, 8, 9, 10, 11, 12, 13, 14, 15]:
+        if col_idx in [1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
             c.alignment = Alignment(horizontal="center", vertical="center")
         else:
             c.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
         if col_idx in [10, 11, 12]:
             c.number_format = "#,##0"
+        elif col_idx == 19:
+            c.number_format = "+#,##0;-#,##0;0"
 
 
 def save_workbook_safe(wb):
-    """Guarda el libro en disco y captura bloqueo si Microsoft Excel lo tiene abierto."""
     try:
         wb.save(EXCEL_FILE)
     except PermissionError:
         raise HTTPException(
             status_code=423,
-            detail="El archivo 'requerimientos_ingenieria.xlsx' está abierto en Excel. Ciérralo para guardar los cambios en el disco."
+            detail="El archivo 'requerimientos_ingenieria.xlsx' está abierto en Excel. Ciérralo para guardar los cambios en disco."
         )
+
+
+def read_items_from_ws(ws) -> list[dict]:
+    rows = list(ws.iter_rows(values_only=True))
+    if len(rows) <= 1:
+        return []
+    headers = [str(h).strip() if h else f"Col_{i}" for i, h in enumerate(rows[0])]
+    items = []
+    for r in rows[1:]:
+        if not any(r):
+            continue
+        item = dict(zip(headers, r))
+        item["Horas_Est"] = float(item.get("Horas_Est") or 0)
+        item["Horas_Reales"] = float(item.get("Horas_Reales") or 0)
+        item["Avance_Pct"] = float(item.get("Avance_Pct") or 0)
+        item["Es_Adicional"] = str(item.get("Es_Adicional") or "No").strip()
+        item["Estado"] = str(item.get("Estado") or "Pendiente").strip()
+        item["Prioridad"] = str(item.get("Prioridad") or "3 - Normal").strip()
+        item["Desplazamiento_Dias"] = int(item.get("Desplazamiento_Dias") or 0)
+        items.append(item)
+    return items
+
+
+def write_items_to_ws(ws, items: list[dict]):
+    ws.delete_rows(2, ws.max_row)
+    for idx, it in enumerate(items, start=2):
+        ws.append([it.get(h, "") for h in HEADERS])
+        style_row(ws, idx)
 
 
 def get_file_metadata():
@@ -170,33 +323,20 @@ def serve_dashboard():
 def get_all_data():
     with excel_lock:
         ensure_excel_exists()
-        wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
+        wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
 
-        rows = list(ws.iter_rows(values_only=True))
-        if not rows:
-            wb.close()
-            return {"requerimientos": [], "catalogos": {}, "file_info": get_file_metadata()}
-
-        headers = [str(h).strip() if h else f"Col_{i}" for i, h in enumerate(rows[0])]
-        requerimientos = []
-        for r in rows[1:]:
-            if not any(r):
-                continue
-            item = dict(zip(headers, r))
-            item["Horas_Est"] = float(item.get("Horas_Est") or 0)
-            item["Horas_Reales"] = float(item.get("Horas_Reales") or 0)
-            item["Avance_Pct"] = float(item.get("Avance_Pct") or 0)
-            item["Es_Adicional"] = str(item.get("Es_Adicional") or "No").strip()
-            item["Estado"] = str(item.get("Estado") or "Pendiente").strip()
-            requerimientos.append(item)
+        items = read_items_from_ws(ws)
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
+        try:
+            wb.save(EXCEL_FILE)
+        except PermissionError:
+            pass
 
         catalogos = {
-            "Proyectos": [],
-            "Solicitantes": [],
-            "Responsables": [],
-            "Tipos": [],
-            "Estados": []
+            "Proyectos": [], "Solicitantes": [], "Responsables": [],
+            "Tipos": [], "Estados": [], "Prioridades": ["1 - Urgente", "2 - Alta", "3 - Normal", "4 - Baja"]
         }
         if "Catalogos" in wb.sheetnames:
             ws_cat = wb["Catalogos"]
@@ -212,7 +352,7 @@ def get_all_data():
 
         wb.close()
         return {
-            "requerimientos": requerimientos,
+            "requerimientos": items,
             "catalogos": catalogos,
             "file_info": get_file_metadata()
         }
@@ -224,10 +364,11 @@ def create_requerimiento(payload: RequerimientoInput):
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
 
         max_num = 0
-        for row in ws.iter_rows(min_row=2, max_col=1, values_only=True):
-            val = str(row[0] or "")
+        for it in items:
+            val = str(it.get("ID_Req") or "")
             if "-" in val:
                 try:
                     num = int(val.split("-")[-1])
@@ -239,28 +380,31 @@ def create_requerimiento(payload: RequerimientoInput):
         fecha = payload.Fecha_Registro or datetime.now().strftime("%Y-%m-%d")
 
         estado_final, avance_final = sync_estado_y_porcentaje(
-            payload.Estado, payload.Avance_Pct, changed_field="estado" if payload.Avance_Pct == 0 and payload.Estado != "Pendiente" else "avance"
+            payload.Estado, payload.Avance_Pct,
+            changed_field="estado" if payload.Avance_Pct == 0 and payload.Estado != "Pendiente" else "avance"
         )
 
-        new_row = [
-            new_id,
-            payload.Proyecto.strip(),
-            payload.Fase_Etapa.strip(),
-            payload.Solicitante.strip(),
-            payload.Responsable.strip(),
-            payload.Descripcion.strip(),
-            (payload.Detalle or "").strip(),
-            payload.Tipo.strip(),
-            payload.Es_Adicional.strip(),
-            payload.Horas_Est,
-            payload.Horas_Reales,
-            avance_final,
-            estado_final,
-            payload.Aprobado.strip(),
-            fecha
-        ]
-        ws.append(new_row)
-        style_row(ws, ws.max_row)
+        items.append({
+            "ID_Req": new_id,
+            "Proyecto": payload.Proyecto.strip(),
+            "Fase_Etapa": payload.Fase_Etapa.strip(),
+            "Solicitante": payload.Solicitante.strip(),
+            "Responsable": payload.Responsable.strip(),
+            "Descripcion": payload.Descripcion.strip(),
+            "Detalle": (payload.Detalle or "").strip(),
+            "Tipo": payload.Tipo.strip(),
+            "Es_Adicional": payload.Es_Adicional.strip(),
+            "Horas_Est": payload.Horas_Est,
+            "Horas_Reales": payload.Horas_Reales,
+            "Avance_Pct": avance_final,
+            "Estado": estado_final,
+            "Aprobado": payload.Aprobado.strip(),
+            "Fecha_Registro": fecha,
+            "Prioridad": payload.Prioridad.strip()
+        })
+
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
         save_workbook_safe(wb)
         wb.close()
 
@@ -270,7 +414,7 @@ def create_requerimiento(payload: RequerimientoInput):
             "Estado": estado_final,
             "Avance_Pct": avance_final,
             "file_info": get_file_metadata(),
-            "message": "Requerimiento guardado en Excel"
+            "message": "Procedimiento guardado y cronograma recalculado en Excel"
         }
 
 
@@ -280,42 +424,32 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
 
-        target_row = None
-        for idx in range(2, ws.max_row + 1):
-            if str(ws.cell(row=idx, column=1).value).strip() == id_req.strip():
-                target_row = idx
-                break
-
-        if not target_row:
+        target = next((it for it in items if str(it.get("ID_Req")).strip() == id_req.strip()), None)
+        if not target:
             wb.close()
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
-        fecha_actual = ws.cell(row=target_row, column=15).value
-        fecha = payload.Fecha_Registro or str(fecha_actual or datetime.now().strftime("%Y-%m-%d"))
+        target.update({
+            "Proyecto": payload.Proyecto.strip(),
+            "Fase_Etapa": payload.Fase_Etapa.strip(),
+            "Solicitante": payload.Solicitante.strip(),
+            "Responsable": payload.Responsable.strip(),
+            "Descripcion": payload.Descripcion.strip(),
+            "Detalle": (payload.Detalle or "").strip(),
+            "Tipo": payload.Tipo.strip(),
+            "Es_Adicional": payload.Es_Adicional.strip(),
+            "Horas_Est": payload.Horas_Est,
+            "Horas_Reales": payload.Horas_Reales,
+            "Avance_Pct": round(float(payload.Avance_Pct or 0), 1),
+            "Estado": payload.Estado.strip(),
+            "Aprobado": payload.Aprobado.strip(),
+            "Prioridad": payload.Prioridad.strip()
+        })
 
-        updated_values = [
-            id_req.strip(),
-            payload.Proyecto.strip(),
-            payload.Fase_Etapa.strip(),
-            payload.Solicitante.strip(),
-            payload.Responsable.strip(),
-            payload.Descripcion.strip(),
-            (payload.Detalle or "").strip(),
-            payload.Tipo.strip(),
-            payload.Es_Adicional.strip(),
-            payload.Horas_Est,
-            payload.Horas_Reales,
-            round(float(payload.Avance_Pct or 0), 1),
-            payload.Estado.strip(),
-            payload.Aprobado.strip(),
-            fecha
-        ]
-
-        for col_idx, val in enumerate(updated_values, start=1):
-            ws.cell(row=target_row, column=col_idx, value=val)
-
-        style_row(ws, target_row)
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
         save_workbook_safe(wb)
         wb.close()
 
@@ -323,31 +457,26 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "status": "ok",
             "ID_Req": id_req,
             "file_info": get_file_metadata(),
-            "message": "Requerimiento actualizado en Excel"
+            "message": "Procedimiento actualizado y cronograma recalculado"
         }
 
 
 @app.patch("/api/requerimientos/{id_req}/progreso")
 def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
-    """Actualización rápida en línea desde la tabla: sincroniza Estado <-> % Avance y guarda en Excel."""
+    """Actualiza Estado/% en línea y recalcula las fechas tentativas de toda la cola."""
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
 
-        target_row = None
-        for idx in range(2, ws.max_row + 1):
-            if str(ws.cell(row=idx, column=1).value).strip() == id_req.strip():
-                target_row = idx
-                break
-
-        if not target_row:
+        target = next((it for it in items if str(it.get("ID_Req")).strip() == id_req.strip()), None)
+        if not target:
             wb.close()
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
-        estado_actual = str(ws.cell(row=target_row, column=13).value or "Pendiente").strip()
-        avance_actual = float(ws.cell(row=target_row, column=12).value or 0)
-        horas_reales_actual = float(ws.cell(row=target_row, column=11).value or 0)
+        estado_actual = target["Estado"]
+        avance_actual = target["Avance_Pct"]
 
         if payload.Estado is not None and payload.Avance_Pct is None:
             nuevo_estado, nuevo_avance = sync_estado_y_porcentaje(payload.Estado, avance_actual, changed_field="estado")
@@ -357,13 +486,13 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
             nuevo_estado = payload.Estado if payload.Estado is not None else estado_actual
             nuevo_avance = payload.Avance_Pct if payload.Avance_Pct is not None else avance_actual
 
-        nuevas_horas_reales = float(payload.Horas_Reales) if payload.Horas_Reales is not None else horas_reales_actual
+        target["Estado"] = nuevo_estado
+        target["Avance_Pct"] = nuevo_avance
+        if payload.Horas_Reales is not None:
+            target["Horas_Reales"] = float(payload.Horas_Reales)
 
-        ws.cell(row=target_row, column=11, value=nuevas_horas_reales)
-        ws.cell(row=target_row, column=12, value=nuevo_avance)
-        ws.cell(row=target_row, column=13, value=nuevo_estado)
-
-        style_row(ws, target_row)
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
         save_workbook_safe(wb)
         wb.close()
 
@@ -372,7 +501,38 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
             "ID_Req": id_req,
             "Estado": nuevo_estado,
             "Avance_Pct": nuevo_avance,
-            "Horas_Reales": nuevas_horas_reales,
+            "requerimientos": items,
+            "file_info": get_file_metadata()
+        }
+
+
+@app.patch("/api/requerimientos/{id_req}/prioridad")
+def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
+    """Cambia la prioridad de un procedimiento y desplaza en cascada las fechas de los demás entregables."""
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
+
+        target = next((it for it in items if str(it.get("ID_Req")).strip() == id_req.strip()), None)
+        if not target:
+            wb.close()
+            raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
+
+        target["Prioridad"] = payload.Prioridad.strip()
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
+        save_workbook_safe(wb)
+        wb.close()
+
+        return {
+            "status": "ok",
+            "ID_Req": id_req,
+            "Prioridad": target["Prioridad"],
+            "Fecha_Tentativa": target["Fecha_Tentativa"],
+            "Desplazamiento_Dias": target["Desplazamiento_Dias"],
+            "requerimientos": items,
             "file_info": get_file_metadata()
         }
 
@@ -383,24 +543,22 @@ def delete_requerimiento(id_req: str):
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
 
-        target_row = None
-        for idx in range(2, ws.max_row + 1):
-            if str(ws.cell(row=idx, column=1).value).strip() == id_req.strip():
-                target_row = idx
-                break
-
-        if not target_row:
+        new_items = [it for it in items if str(it.get("ID_Req")).strip() != id_req.strip()]
+        if len(new_items) == len(items):
             wb.close()
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
-        ws.delete_rows(target_row, 1)
+        compute_cascade_schedule(new_items)
+        write_items_to_ws(ws, new_items)
         save_workbook_safe(wb)
         wb.close()
         return {
             "status": "ok",
+            "requerimientos": new_items,
             "file_info": get_file_metadata(),
-            "message": f"Requerimiento {id_req} eliminado del Excel"
+            "message": f"Requerimiento {id_req} eliminado y cronograma recalculado"
         }
 
 
