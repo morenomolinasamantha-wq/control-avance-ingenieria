@@ -21,13 +21,13 @@ INDEX_FILE = BASE_DIR / "index.html"
 
 HORAS_POR_DIA = 8.0
 
-# Configuración opcional para persistencia permanente en GitHub (ideal para Render Free Tier)
+# Configuración para persistencia permanente en GitHub (Render Free Tier)
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "morenomolinasamantha-wq/control-avance-ingenieria").strip()
 GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip()
 GITHUB_FILE_PATH = os.environ.get("GITHUB_FILE_PATH", "requerimientos_ingenieria.xlsx").strip()
 
-app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Demoras Externas")
+app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Entregas Reales")
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,9 +43,11 @@ last_github_sync_status = "local_only" if not GITHUB_TOKEN else "pending"
 HEADERS = [
     "ID_Req", "Proyecto", "Fase_Etapa", "Solicitante", "Responsable",
     "Descripcion", "Detalle", "Tipo", "Es_Adicional", "Horas_Est",
-    "Horas_Reales", "Avance_Pct", "Estado", "Aprobado", "Fecha_Registro",
+    "Horas_Reales", "Avance_Pct", "Estado", "Aprobado",
+    "Fecha_Solicitud", "Fecha_Registro",
     "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias",
-    "Horas_Demora_Externa", "Comentarios_Externos", "Fecha_Real_Entrega"
+    "Horas_Demora_Externa", "Comentarios_Externos", "Fecha_Real_Entrega",
+    "Dias_Desde_Solicitud"
 ]
 
 
@@ -63,6 +65,7 @@ class RequerimientoInput(BaseModel):
     Avance_Pct: float = 0
     Estado: str = "Pendiente"
     Aprobado: str = "Pendiente"
+    Fecha_Solicitud: Optional[str] = None
     Fecha_Registro: Optional[str] = None
     Prioridad: str = "3 - Normal"
     Horas_Demora_Externa: float = 0
@@ -257,6 +260,16 @@ def working_days_diff(d_base: date, d_new: date) -> int:
     return count
 
 
+def safe_iso_date(val, fallback: date) -> date:
+    s = str(val or "").strip()[:10]
+    if not s:
+        return fallback
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        return fallback
+
+
 def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = None) -> list[dict]:
     if anchor_date is None:
         anchor_date = date.today()
@@ -270,14 +283,14 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
 
     for resp, r_items in by_resp.items():
         for it in r_items:
+            reg_d = safe_iso_date(it.get("Fecha_Registro"), anchor_date)
+            sol_d = safe_iso_date(it.get("Fecha_Solicitud"), reg_d)
+            it["Fecha_Registro"] = reg_d.isoformat()
+            it["Fecha_Solicitud"] = sol_d.isoformat()
+
             ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
             if str(it.get("Estado", "")).strip() == "Terminado" or float(it.get("Avance_Pct", 0)) >= 100:
-                reg_str = str(it.get("Fecha_Registro") or anchor_date.isoformat())[:10]
-                try:
-                    reg_d = date.fromisoformat(reg_str)
-                except ValueError:
-                    reg_d = anchor_date
                 dias_usados = max(1, math.ceil(float(it.get("Horas_Reales") or it.get("Horas_Est") or 8) / HORAS_POR_DIA))
                 done_d = add_working_days(reg_d, dias_usados)
                 real_d = add_working_days(done_d, ext_days) if ext_days > 0 else done_d
@@ -285,6 +298,7 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
                 it["Fecha_Tentativa"] = done_d.isoformat()
                 it["Desplazamiento_Dias"] = 0
                 it["Fecha_Real_Entrega"] = real_d.isoformat()
+                it["Dias_Desde_Solicitud"] = max(0, working_days_diff(sol_d, real_d))
 
         active_items = [
             it for it in r_items
@@ -322,11 +336,13 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
             real_end_d = add_working_days(end_d, ext_days) if ext_days > 0 else end_d
+            sol_d = safe_iso_date(it.get("Fecha_Solicitud"), anchor_date)
 
             it["Fecha_Base"] = d_base.isoformat()
             it["Fecha_Tentativa"] = end_d.isoformat()
             it["Desplazamiento_Dias"] = working_days_diff(d_base, end_d)
             it["Fecha_Real_Entrega"] = real_end_d.isoformat()
+            it["Dias_Desde_Solicitud"] = max(0, working_days_diff(sol_d, anchor_date))
 
     return items
 
@@ -387,6 +403,10 @@ def ensure_excel_exists():
             if not any(r):
                 continue
             d = dict(zip(current_headers, r))
+            reg_str = str(d.get("Fecha_Registro") or date.today().isoformat())[:10]
+            sol_str = str(d.get("Fecha_Solicitud") or reg_str)[:10]
+            d["Fecha_Registro"] = reg_str
+            d["Fecha_Solicitud"] = sol_str
             d.setdefault("Prioridad", "3 - Normal")
             d.setdefault("Horas_Demora_Externa", 0)
             d.setdefault("Comentarios_Externos", "")
@@ -396,6 +416,7 @@ def ensure_excel_exists():
             ws.append([it.get(h, "") for h in HEADERS])
             style_row(ws, idx)
         wb.save(EXCEL_FILE)
+        trigger_async_github_sync()
     wb.close()
 
 
@@ -407,7 +428,7 @@ def style_row(ws, row_idx: int):
     fill = zebra_fill if row_idx % 2 == 0 else white_fill
     ws.row_dimensions[row_idx].height = 34
 
-    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22}
+    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24}
     for col_idx in range(1, len(HEADERS) + 1):
         c = ws.cell(row=row_idx, column=col_idx)
         c.fill = fill
@@ -418,9 +439,9 @@ def style_row(ws, row_idx: int):
             vertical="center",
             wrap_text=True
         )
-        if col_idx in {10, 11, 12, 20}:
+        if col_idx in {10, 11, 12, 21, 24}:
             c.number_format = "#,##0"
-        elif col_idx == 19:
+        elif col_idx == 20:
             c.number_format = "+#,##0;-#,##0;0"
 
 
@@ -446,6 +467,10 @@ def read_items_from_ws(ws) -> list[dict]:
         if not any(r):
             continue
         item = dict(zip(headers, r))
+        reg_str = str(item.get("Fecha_Registro") or date.today().isoformat())[:10]
+        sol_str = str(item.get("Fecha_Solicitud") or reg_str)[:10]
+        item["Fecha_Registro"] = reg_str
+        item["Fecha_Solicitud"] = sol_str
         item["Horas_Est"] = float(item.get("Horas_Est") or 0)
         item["Horas_Reales"] = float(item.get("Horas_Reales") or 0)
         item["Avance_Pct"] = float(item.get("Avance_Pct") or 0)
@@ -455,6 +480,7 @@ def read_items_from_ws(ws) -> list[dict]:
         item["Desplazamiento_Dias"] = int(item.get("Desplazamiento_Dias") or 0)
         item["Horas_Demora_Externa"] = float(item.get("Horas_Demora_Externa") or 0)
         item["Comentarios_Externos"] = str(item.get("Comentarios_Externos") or "").strip()
+        item["Dias_Desde_Solicitud"] = int(item.get("Dias_Desde_Solicitud") or 0)
         items.append(item)
     return items
 
@@ -556,7 +582,8 @@ def create_requerimiento(payload: RequerimientoInput):
                 except ValueError:
                     pass
         new_id = f"ING-{max_num + 1:03d}"
-        fecha = payload.Fecha_Registro or datetime.now().strftime("%Y-%m-%d")
+        fecha_reg = (payload.Fecha_Registro or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
+        fecha_sol = (payload.Fecha_Solicitud or fecha_reg).strip()[:10]
 
         estado_final, avance_final = sync_estado_y_porcentaje(
             payload.Estado, payload.Avance_Pct,
@@ -578,7 +605,8 @@ def create_requerimiento(payload: RequerimientoInput):
             "Avance_Pct": avance_final,
             "Estado": estado_final,
             "Aprobado": payload.Aprobado.strip(),
-            "Fecha_Registro": fecha,
+            "Fecha_Solicitud": fecha_sol,
+            "Fecha_Registro": fecha_reg,
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
             "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()
@@ -613,6 +641,9 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             wb.close()
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
+        fecha_reg = (payload.Fecha_Registro or target.get("Fecha_Registro") or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
+        fecha_sol = (payload.Fecha_Solicitud or target.get("Fecha_Solicitud") or fecha_reg).strip()[:10]
+
         target.update({
             "Proyecto": payload.Proyecto.strip(),
             "Fase_Etapa": payload.Fase_Etapa.strip(),
@@ -627,6 +658,8 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "Avance_Pct": round(float(payload.Avance_Pct or 0), 1),
             "Estado": payload.Estado.strip(),
             "Aprobado": payload.Aprobado.strip(),
+            "Fecha_Solicitud": fecha_sol,
+            "Fecha_Registro": fecha_reg,
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
             "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()

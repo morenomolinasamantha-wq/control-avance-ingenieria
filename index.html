@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=lHlrXC776o3K8AeGpVuRu0hPq4ZWWCxGLUWJ4TJ-kstcEFzQ2thSSdVzncE8lEMU0O_KlAB-bLU2MvdWJ7Z88NP8BPJSqV0kUS_BmJZO4V-N_00yHghKG8baKWIeHMMKqy1hYHUtHw0jtpWtCiAMdcuxyOv7EgwYKVQ5YmxS3NpcnvR5xBmFDsQQnVWBxAlR8nCXaf19Rt-3TeGnSBcXTNb-U1xxS8Joim58TP3G7sAbjGPg1n8IEn7gSqr8cqE5NSUebdqAxri4asbeqk3byrLICC4iSXV74d-vzmaUFEPgReZBShwwwwacZzh1ucdC" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=nbtuswjgyzf6HWrnOTGBVriEINDjCPwhTEZz4_vK6B7JpZLO4yjOwyzc6_NF0Ype5DxrHApQayXgj1Wtt2Gg4e7LMrgwKSjYkAIpgEPPJuZuWkdAJL7xe9nDfJFlnCMBQTyZDlIHINVSP8OKQKpdK2ESHAsfOgldkSdAY15jjr5PLclvEHIIAsM-vgLo60uEaCHbhqQmVf0bxJ-vruvvW4LrLHW4rPD5UANpSa6gU8tGA2fkK8_IDvyfhQSW0Asl79yToecbEJMMi15hMOf0kAvvsafiSdNyLhNDC98-8q8ZuTe8sYOCl7R1kjPXXMJl" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
        1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (GRAFITO & PAPEL CÁLIDO)
@@ -49,6 +49,7 @@
       --chart-ink: #EFECE6;
       --holiday-bg: rgba(209, 96, 82, 0.09);
       --weekend-bg: rgba(255, 255, 255, 0.025);
+      --queue-bg: rgba(132, 139, 150, 0.12);
     }
 
     [data-theme="paper"] {
@@ -86,6 +87,7 @@
       --chart-ink: #1B1D21;
       --holiday-bg: rgba(194, 73, 59, 0.07);
       --weekend-bg: rgba(27, 29, 33, 0.03);
+      --queue-bg: rgba(104, 110, 120, 0.10);
     }
 
     :root {
@@ -268,7 +270,7 @@
     }
 
     /* ==========================================================================
-       3. CONTAINER, PORTFOLIO CAPSULES & RADAR DE SALUD
+       3. CONTAINER & PORTFOLIO CAPSULES
        ========================================================================== */
     .container {
       max-width: 1460px;
@@ -412,6 +414,11 @@
       color: var(--tone-steel);
     }
 
+    .tag-neutral {
+      background: var(--tone-neutral-soft);
+      color: var(--tone-neutral);
+    }
+
     /* ==========================================================================
        4. SIMULADOR "¿QUÉ PASA SI...?" COLAPSABLE
        ========================================================================== */
@@ -445,10 +452,6 @@
       gap: 8px;
       font-size: 0.79rem;
       color: var(--ink-secondary);
-    }
-
-    .sim-group strong {
-      color: var(--ink-primary);
     }
 
     /* ==========================================================================
@@ -527,7 +530,7 @@
     }
 
     /* ==========================================================================
-       6. ANALYTICS BENTO GRID (COLAPSABLE PARA PRIORIZAR LA MESA DE TRABAJO)
+       6. ANALYTICS BENTO GRID
        ========================================================================== */
     .analytics-grid {
       display: grid;
@@ -580,7 +583,7 @@
     }
 
     /* ==========================================================================
-       7. MESA DE TRABAJO ZERO-HORIZONTAL-SCROLL + MULTI-VISTA (LISTA / GANTT / KANBAN)
+       7. MESA DE TRABAJO MULTI-VISTA (CERO SCROLL HORIZONTAL)
        ========================================================================== */
     .workbench-card {
       background: var(--bg-surface);
@@ -621,7 +624,6 @@
       font-weight: 600;
     }
 
-    /* Tabla adaptativa Zero-Scroll en escritorio (6 columnas ergonómicas) */
     .table-wrap {
       width: 100%;
     }
@@ -633,8 +635,8 @@
       table-layout: fixed;
     }
 
-    col.col-id      { width: 14%; }
-    col.col-desc    { width: 34%; }
+    col.col-id      { width: 16%; }
+    col.col-desc    { width: 32%; }
     col.col-state   { width: 15%; }
     col.col-prog    { width: 15%; }
     col.col-date    { width: 13%; }
@@ -680,7 +682,6 @@
       100% { background-color: transparent; }
     }
 
-    /* Celda 1: Identidad y Responsable */
     .id-badge {
       font-weight: 600;
       font-size: 0.79rem;
@@ -718,7 +719,16 @@
       flex-shrink: 0;
     }
 
-    /* Celda 2: Procedimiento y Detalle Expandible */
+    .req-date-line {
+      margin-top: 6px;
+      font-size: 0.71rem;
+      color: var(--ink-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: flex-start;
+    }
+
     .proc-title {
       font-weight: 600;
       font-size: 0.84rem;
@@ -733,7 +743,7 @@
       margin-top: 3px;
     }
 
-     .proc-sub.clamped {
+    .proc-sub.clamped {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
@@ -773,7 +783,6 @@
       margin-right: 4px;
     }
 
-    /* Celda 3: Prioridad y Estado Apilados */
     .stack-pills {
       display: flex;
       flex-direction: column;
@@ -848,7 +857,6 @@
       border-color: rgba(132, 139, 150, 0.2);
     }
 
-    /* Celda 4: Avance Interactivo + Botones Rápidos */
     .progress-stack {
       display: flex;
       flex-direction: column;
@@ -936,7 +944,6 @@
       border-color: var(--tone-sage);
     }
 
-    /* Celda 5: Entrega Real y Horas */
     .delivery-date {
       font-weight: 600;
       font-size: 0.8rem;
@@ -963,7 +970,6 @@
       color: var(--ink-primary);
     }
 
-    /* Celda 6: Acciones Compactas Verticales */
     .row-actions-col {
       display: flex;
       flex-direction: column;
@@ -1007,7 +1013,7 @@
     }
 
     /* ==========================================================================
-       8. VISTA 2: CRONOGRAMA VISUAL / MINI-GANTT CON FESTIVOS COLOMBIA
+       8. VISTA 2: CRONOGRAMA VISUAL / MINI-GANTT CON ESPERA EN COLA Y FESTIVOS
        ========================================================================== */
     .gantt-container {
       padding: 18px;
@@ -1067,8 +1073,8 @@
     .gantt-table td.task-col {
       text-align: left;
       padding: 10px 12px;
-      min-width: 240px;
-      max-width: 270px;
+      min-width: 250px;
+      max-width: 280px;
       position: sticky;
       left: 0;
       background: var(--bg-surface);
@@ -1092,6 +1098,18 @@
       background: var(--holiday-bg);
       color: var(--tone-terracotta);
       font-weight: 600;
+    }
+
+    .gantt-bar-queue {
+      height: 18px;
+      border-radius: 5px;
+      background: var(--queue-bg);
+      border: 1px dashed var(--border-strong);
+      color: var(--ink-secondary);
+      font-size: 0.62rem;
+      font-weight: 600;
+      display: grid;
+      place-items: center;
     }
 
     .gantt-bar-ing {
@@ -1181,11 +1199,10 @@
       padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       box-shadow: var(--shadow-card);
     }
 
-    /* Responsive para pantallas pequeñas (móvil / tablet) sin scroll horizontal */
     @media (max-width: 900px) {
       table, thead, tbody, th, td, tr {
         display: block;
@@ -1264,7 +1281,7 @@
     }
 
     .drawer-panel {
-      width: 510px;
+      width: 520px;
       max-width: 100%;
       height: 100%;
       background: var(--bg-surface);
@@ -1324,6 +1341,14 @@
       font-family: inherit;
       outline: none;
       transition: border-color var(--transition-fast);
+    }
+
+    .field input[type="date"] {
+      color-scheme: dark;
+    }
+
+    [data-theme="paper"] .field input[type="date"] {
+      color-scheme: light;
     }
 
     .field input:focus,
@@ -1390,7 +1415,7 @@
         <div class="sync-pill" id="syncPill">
           <span class="sync-dot" id="syncDot"></span>
           <span id="syncText">Sincronizado con Excel</span>
-          <button class="sync-refresh" title="Releer archivo Excel desde disco" onclick="loadData(true)">↻</button>
+          <button class="sync-refresh" title="Releer archivo Excel desde la nube o disco" onclick="loadData(true)">↻</button>
         </div>
       </div>
 
@@ -1443,7 +1468,7 @@
     <!-- 3. BARRA DE FILTROS CONTEXTUALES -->
     <section class="filter-toolbar">
       <div class="filter-controls">
-        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, nota o ID ( / )..." oninput="applyFilters()" />
+        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, fecha o ID ( / )..." oninput="applyFilters()" />
 
         <select id="fResponsable" class="select-clean" onchange="applyFilters()">
           <option value="TODOS">Responsable: Todos</option>
@@ -1518,7 +1543,7 @@
       <div class="workbench-header">
         <div>
           <h3 class="card-title">Cronograma Dinámico de Entregables</h3>
-          <p class="card-desc">Edición directa sin desplazamiento horizontal · Alterna entre Lista, Línea de Tiempo (Gantt) o Tablero Kanban</p>
+          <p class="card-desc">Incluye fecha real de solicitud, tiempo en espera por priorización y entrega estimada en días hábiles</p>
         </div>
 
         <div class="workbench-right">
@@ -1545,7 +1570,7 @@
           </colgroup>
           <thead>
             <tr>
-              <th>ID · Proyecto · Equipo</th>
+              <th>ID · Proyecto · Solicitud</th>
               <th>Procedimiento y Notas Externas</th>
               <th>Prioridad y Estado</th>
               <th>Avance %</th>
@@ -1638,6 +1663,20 @@
             <label>Empleado Responsable *</label>
             <input type="text" id="inpResponsable" list="dlResponsables" required placeholder="Ej. Samantha Moreno" />
             <datalist id="dlResponsables"></datalist>
+          </div>
+
+          <div class="field">
+            <label>Fecha en que se pidió (Solicitud) *</label>
+            <input type="date" id="inpFechaSolicitud" required />
+          </div>
+
+          <div class="field">
+            <label>Fecha de registro en sistema</label>
+            <input type="date" id="inpFechaRegistro" />
+          </div>
+
+          <div class="sync-hint" style="margin-top:-4px;">
+            Si el requerimiento te lo pidieron hace días o semanas pero lo ingresas hoy porque se priorizaron otros entregables, selecciona arriba la <strong>fecha real en que se pidió</strong> para evidenciar el tiempo en cola.
           </div>
 
           <div class="field span-2">
@@ -1733,11 +1772,10 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // Requerimientos reales del usuario
     const FALLBACK_DATA = [
-      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
-      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
-      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" }
+      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
+      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
+      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" }
     ];
 
     const holidayMapCache = {};
@@ -1899,10 +1937,14 @@
 
       Object.values(byResp).forEach(rItems => {
         rItems.forEach(it => {
+          const regD = it.Fecha_Registro ? parseIsoDate(it.Fecha_Registro) : anchor;
+          const solD = it.Fecha_Solicitud ? parseIsoDate(it.Fecha_Solicitud) : regD;
+          it.Fecha_Registro = formatIsoDate(regD);
+          it.Fecha_Solicitud = formatIsoDate(solD);
+
           const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
           const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
           if (it.Estado === "Terminado" || Number(it.Avance_Pct || 0) >= 100) {
-            const regD = parseIsoDate(it.Fecha_Registro);
             const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / effectiveHoursPerDay));
             const doneD = addWorkingDays(regD, diasUsados);
             const realD = extDays > 0 ? addWorkingDays(doneD, extDays) : doneD;
@@ -1911,6 +1953,7 @@
             it.Fecha_Tentativa = formatIsoDate(doneD);
             it.Desplazamiento_Dias = 0;
             it.Fecha_Real_Entrega = formatIsoDate(realD);
+            it.Dias_Desde_Solicitud = Math.max(0, workingDaysDiff(solD, realD));
           }
         });
 
@@ -1947,12 +1990,14 @@
           const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
           const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
           const realEndD = extDays > 0 ? addWorkingDays(endD, extDays) : endD;
+          const solD = parseIsoDate(it.Fecha_Solicitud);
 
           it.Fecha_Inicio_Calc = formatIsoDate(startD);
           it.Fecha_Base = formatIsoDate(dBase);
           it.Fecha_Tentativa = formatIsoDate(endD);
           it.Desplazamiento_Dias = workingDaysDiff(dBase, endD);
           it.Fecha_Real_Entrega = formatIsoDate(realEndD);
+          it.Dias_Desde_Solicitud = Math.max(0, workingDaysDiff(solD, anchor));
         });
       });
     }
@@ -2075,7 +2120,8 @@
       lines.push("", "*Detalle de procedimientos:*");
       filteredData.forEach(r => {
         const ext = Number(r.Horas_Demora_Externa || 0) > 0 ? ` (+${r.Horas_Demora_Externa}h demora ext.)` : "";
-        lines.push(`- [${r.ID_Req}] ${r.Descripcion}: ${r.Avance_Pct}% (${r.Estado}) -> Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
+        const solStr = r.Fecha_Solicitud ? `Pedido: ${r.Fecha_Solicitud} | ` : "";
+        lines.push(`- [${r.ID_Req}] ${r.Descripcion}: ${r.Avance_Pct}% (${r.Estado}) | ${solStr}Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
       });
 
       navigator.clipboard.writeText(lines.join("\n")).then(() => {
@@ -2223,7 +2269,7 @@
         if (prio !== "TODOS" && (r.Prioridad || "3 - Normal") !== prio) return false;
         if (est !== "TODOS" && r.Estado !== est) return false;
         if (q) {
-          const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle} ${r.Comentarios_Externos || ""}`.toLowerCase();
+          const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle} ${r.Fecha_Solicitud || ""} ${r.Comentarios_Externos || ""}`.toLowerCase();
           if (!text.includes(q)) return false;
         }
         return true;
@@ -2577,6 +2623,12 @@
           ? `<span class="pill-tag tag-extra" style="margin-left:6px;">+${r.Horas_Est}h alcance</span>`
           : "";
 
+        const solDate = r.Fecha_Solicitud || r.Fecha_Registro || "—";
+        const daysSinceSol = Number(r.Dias_Desde_Solicitud || 0);
+        const solAgeBadge = daysSinceSol > 0
+          ? `<span class="pill-tag tag-neutral tabular" title="Días hábiles transcurridos desde que se pidió (${solDate})">${daysSinceSol}d desde solicitud</span>`
+          : "";
+
         const detalleTxt = (r.Detalle || "").trim();
         const isLong = detalleTxt.length > 110;
         const isExpanded = expandedDetails.has(r.ID_Req);
@@ -2625,6 +2677,10 @@
             <div class="person-line" title="Responsable: ${r.Responsable} | Solicita: ${r.Solicitante}">
               <span class="avatar-mini">${getInitials(r.Responsable)}</span>
               <span>${r.Responsable.split(" ")[0]} · <em>${r.Solicitante}</em></span>
+            </div>
+            <div class="req-date-line tabular">
+              <span>Pedido: <strong>${solDate}</strong></span>
+              ${solAgeBadge}
             </div>
           </td>
           <td>
@@ -2697,7 +2753,7 @@
     }
 
     /* ==========================================================================
-       VISTA GANTT CON CALENDARIO DE FESTIVOS DE COLOMBIA
+       VISTA GANTT CON ESPERA EN COLA (FECHA SOLICITUD) Y FESTIVOS COLOMBIA
        ========================================================================== */
     function renderGantt() {
       const container = document.getElementById("ganttViewContainer");
@@ -2706,17 +2762,20 @@
         return;
       }
 
-      const startDates = filteredData.map(r => parseIsoDate(r.Fecha_Inicio_Calc || r.Fecha_Registro));
+      const startDates = filteredData.map(r => parseIsoDate(r.Fecha_Solicitud || r.Fecha_Inicio_Calc || r.Fecha_Registro));
       const endDates = filteredData.map(r => parseIsoDate(r.Fecha_Real_Entrega || r.Fecha_Tentativa));
       let minD = new Date(Math.min(...startDates.map(d => d.getTime())));
       let maxD = new Date(Math.max(...endDates.map(d => d.getTime())));
-      // Añadir 2 días de margen visual
       maxD = shiftDays(maxD, 2);
+
+      // Limitar ventana máxima a 65 días para mantener fluidez visual
+      const minAllowed = shiftDays(maxD, -65);
+      if (minD.getTime() < minAllowed.getTime()) minD = minAllowed;
 
       const daysList = [];
       let curr = new Date(minD.getTime());
       let safety = 0;
-      while (curr.getTime() <= maxD.getTime() && safety < 60) {
+      while (curr.getTime() <= maxD.getTime() && safety < 66) {
         daysList.push(new Date(curr.getTime()));
         curr.setDate(curr.getDate() + 1);
         safety++;
@@ -2735,6 +2794,7 @@
       }).join("");
 
       const bodyRows = filteredData.map(r => {
+        const solD = parseIsoDate(r.Fecha_Solicitud || r.Fecha_Registro);
         const sD = parseIsoDate(r.Fecha_Inicio_Calc || r.Fecha_Registro);
         const tD = parseIsoDate(r.Fecha_Tentativa);
         const rD = parseIsoDate(r.Fecha_Real_Entrega || r.Fecha_Tentativa);
@@ -2749,6 +2809,10 @@
             return `<td class="${cls}" title="${hol || "Fin de semana"}"></td>`;
           }
           const t = d.getTime();
+          if (t >= solD.getTime() && t < sD.getTime()) {
+            const label = t === solD.getTime() ? "SOL" : "···";
+            return `<td class="${cls}"><div class="gantt-bar-queue" title="En cola desde solicitud (${r.Fecha_Solicitud}) por priorización de otros entregables">${label}</div></td>`;
+          }
           if (t >= sD.getTime() && t <= tD.getTime()) {
             const barCls = isDone ? "gantt-bar-done" : "gantt-bar-ing";
             return `<td class="${cls}"><div class="${barCls}" title="Ejecución Ingeniería">${r.Avance_Pct}%</div></td>`;
@@ -2763,7 +2827,7 @@
           <td class="task-col">
             <div class="id-badge tabular">${r.ID_Req} · ${r.Prioridad}</div>
             <div class="proc-title" style="font-size:0.8rem;">${r.Descripcion}</div>
-            <div class="proc-sub">${r.Responsable} · Entrega: <strong>${r.Fecha_Real_Entrega}</strong></div>
+            <div class="proc-sub">Pedido: ${r.Fecha_Solicitud} · Entrega: <strong>${r.Fecha_Real_Entrega}</strong></div>
           </td>
           ${cells}
         </tr>`;
@@ -2771,10 +2835,11 @@
 
       container.innerHTML = `
         <div class="gantt-legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--queue-bg); border:1px dashed var(--border-strong);"></span> Espera en cola desde solicitud (SOL)</span>
           <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-steel);"></span> Ejecución Ingeniería</span>
-          <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-ochre);"></span> Demora por Motivo Externo</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-ochre);"></span> Demora Externa</span>
           <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-sage);"></span> Terminado</span>
-          <span class="legend-item"><span class="legend-swatch" style="background:var(--holiday-bg); border:1px solid var(--tone-terracotta);"></span> Festivo Colombia / Fin de semana (saltado)</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--holiday-bg); border:1px solid var(--tone-terracotta);"></span> Festivo Colombia / Fin de semana</span>
         </div>
         <div class="gantt-grid-wrap">
           <table class="gantt-table">
@@ -2808,6 +2873,7 @@
             </div>
             <div class="proc-title" style="font-size:0.82rem;">${r.Descripcion}</div>
             <div class="proc-sub">${r.Proyecto} · ${r.Responsable}</div>
+            <div class="proc-sub tabular">Pedido: <strong>${r.Fecha_Solicitud || r.Fecha_Registro}</strong></div>
             ${ext > 0 ? `<span class="pill-tag tag-ochre tabular">+${ext}h demora externa</span>` : ""}
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.74rem;">
               <span class="tabular">Entrega: <strong>${r.Fecha_Real_Entrega}</strong></span>
@@ -2917,11 +2983,9 @@
         }
         allData = data.requerimientos || allData;
         computeLocalCascade(allData);
+        saveLocalBackup();
         detectShiftedRows(prevDates);
         applyFilters();
-        if (data.file_info && data.file_info.last_modified) {
-          document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
-        }
         showToast(`${idReq}: nueva fecha real de entrega ${data.Fecha_Real_Entrega}`);
       } catch (err) {
         showToast("Error de conexión al guardar en Excel", true);
@@ -2960,12 +3024,10 @@
         }
         allData = data.requerimientos || allData;
         computeLocalCascade(allData);
+        saveLocalBackup();
         detectShiftedRows(prevDates);
         applyFilters();
-        if (data.file_info && data.file_info.last_modified) {
-          document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
-        }
-        showToast(`${idReq} -> ${nuevaPrioridad}. Fechas actualizadas en Excel`);
+        showToast(`${idReq} -> ${nuevaPrioridad}. Fechas actualizadas`);
       } catch (e) {
         showToast("Error de conexión al guardar prioridad", true);
       }
@@ -3020,13 +3082,11 @@
         if (data.requerimientos) {
           allData = data.requerimientos;
           computeLocalCascade(allData);
+          saveLocalBackup();
           detectShiftedRows(prevDates);
           applyFilters();
         }
-        if (data.file_info && data.file_info.last_modified) {
-          document.getElementById("syncText").textContent = `Excel en disco · ${data.file_info.last_modified.split(" ")[1]}`;
-        }
-        showToast(`${idReq} actualizado (${data.Estado} · ${data.Avance_Pct}%) en Excel`);
+        showToast(`${idReq} actualizado (${data.Estado} · ${data.Avance_Pct}%)`);
       } catch (e) {
         showToast("Error de conexión al guardar en Excel", true);
       }
@@ -3047,6 +3107,11 @@
       document.getElementById("inpEstado").value = computeEstadoFromPct(pct, currentEst);
     }
 
+    function todayIsoString() {
+      const now = new Date();
+      return formatIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+    }
+
     function openDrawer(req = null) {
       document.getElementById("drawerOverlay").classList.add("open");
       if (req) {
@@ -3056,6 +3121,8 @@
         document.getElementById("inpFase").value = req.Fase_Etapa;
         document.getElementById("inpSolicitante").value = req.Solicitante;
         document.getElementById("inpResponsable").value = req.Responsable;
+        document.getElementById("inpFechaSolicitud").value = (req.Fecha_Solicitud || req.Fecha_Registro || todayIsoString()).slice(0, 10);
+        document.getElementById("inpFechaRegistro").value = (req.Fecha_Registro || todayIsoString()).slice(0, 10);
         document.getElementById("inpDescripcion").value = req.Descripcion;
         document.getElementById("inpDetalle").value = req.Detalle || "";
         document.getElementById("inpPrioridad").value = req.Prioridad || "3 - Normal";
@@ -3069,9 +3136,12 @@
         document.getElementById("inpTipo").value = req.Tipo;
         document.getElementById("inpAprobado").value = req.Aprobado || "Aprobado";
       } else {
+        const today = todayIsoString();
         document.getElementById("drawerTitle").textContent = "Nuevo Procedimiento";
         document.getElementById("editIdReq").value = "";
         document.getElementById("procForm").reset();
+        document.getElementById("inpFechaSolicitud").value = today;
+        document.getElementById("inpFechaRegistro").value = today;
         document.getElementById("inpPrioridad").value = "3 - Normal";
         document.getElementById("inpEstado").value = "Pendiente";
         document.getElementById("inpAvance").value = 0;
@@ -3091,11 +3161,17 @@
     async function submitDrawerForm(e) {
       e.preventDefault();
       const editId = document.getElementById("editIdReq").value;
+      const today = todayIsoString();
+      const fechaReg = document.getElementById("inpFechaRegistro").value || today;
+      const fechaSol = document.getElementById("inpFechaSolicitud").value || fechaReg;
+
       const payload = {
         Proyecto: document.getElementById("inpProyecto").value,
         Fase_Etapa: document.getElementById("inpFase").value,
         Solicitante: document.getElementById("inpSolicitante").value,
         Responsable: document.getElementById("inpResponsable").value,
+        Fecha_Solicitud: fechaSol,
+        Fecha_Registro: fechaReg,
         Descripcion: document.getElementById("inpDescripcion").value,
         Detalle: document.getElementById("inpDetalle").value,
         Prioridad: document.getElementById("inpPrioridad").value,
@@ -3142,7 +3218,7 @@
         await loadData(false);
         detectShiftedRows(prevDates);
         applyFilters();
-        showToast(`${data.ID_Req || editId} guardado y fechas actualizadas`);
+        showToast(`${data.ID_Req || editId} guardado (Pedido: ${fechaSol})`);
       } else {
         showToast(data.detail || "Error al guardar en Excel", true);
       }
@@ -3173,7 +3249,6 @@
       }
     }
 
-    // Atajos de teclado ergonómicos (/ para buscar, Esc para cerrar modales)
     window.addEventListener("keydown", e => {
       if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
         e.preventDefault();
