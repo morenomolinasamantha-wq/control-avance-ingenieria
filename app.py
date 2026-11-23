@@ -418,7 +418,15 @@ def ensure_excel_exists():
         wb.save(EXCEL_FILE)
         return
 
-    wb = openpyxl.load_workbook(EXCEL_FILE)
+    try:
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+    except Exception:
+        EXCEL_FILE.unlink(missing_ok=True)
+        return ensure_excel_exists()
+    if "Requerimientos" not in wb.sheetnames:
+        wb.close()
+        EXCEL_FILE.unlink(missing_ok=True)
+        return ensure_excel_exists()
     ws = wb["Requerimientos"]
     current_headers = [str(c.value).strip() if c.value else "" for c in ws[1]]
     if current_headers != HEADERS:
@@ -543,8 +551,11 @@ def get_file_metadata():
 @app.on_event("startup")
 def on_startup():
     with excel_lock:
-        pull_excel_from_github()
-        ensure_excel_exists()
+        try:
+            pull_excel_from_github()
+            ensure_excel_exists()
+        except Exception as e:
+            print(f"[STARTUP WARNING] Error migrando Excel al iniciar: {e}")
 
 
 @app.get("/favicon.ico", include_in_schema=False)
