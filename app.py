@@ -2,13 +2,14 @@ import os
 import json
 import math
 import base64
+import hmac
 import threading
 import urllib.request
 import urllib.error
 from pathlib import Path
 from datetime import date, datetime, timedelta
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,11 +22,14 @@ INDEX_FILE = BASE_DIR / "index.html"
 
 HORAS_POR_DIA = 8.0
 
-# Configuración para persistencia permanente en GitHub (Render Free Tier)
+# Persistencia en GitHub (Render Free Tier)
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "morenomolinasamantha-wq/control-avance-ingenieria").strip()
 GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip()
 GITHUB_FILE_PATH = os.environ.get("GITHUB_FILE_PATH", "requerimientos_ingenieria.xlsx").strip()
+
+# Clave de edición (configurable por variable de entorno ADMIN_PASSWORD en Render)
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "tecval2026").strip()
 
 app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Entregas Reales")
 
@@ -47,8 +51,12 @@ HEADERS = [
     "Fecha_Solicitud", "Fecha_Registro",
     "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias",
     "Horas_Demora_Externa", "Comentarios_Externos", "Fecha_Real_Entrega",
-    "Dias_Desde_Solicitud"
+    "Dias_Desde_Solicitud", "Cantidad_Ediciones"
 ]
+
+
+class AuthCheckInput(BaseModel):
+    password: str
 
 
 class RequerimientoInput(BaseModel):
@@ -70,6 +78,7 @@ class RequerimientoInput(BaseModel):
     Prioridad: str = "3 - Normal"
     Horas_Demora_Externa: float = 0
     Comentarios_Externos: Optional[str] = ""
+    Cantidad_Ediciones: int = 0
 
 
 class ProgressPatchInput(BaseModel):
@@ -85,6 +94,25 @@ class PriorityPatchInput(BaseModel):
 class ExternalDelayPatchInput(BaseModel):
     Horas_Demora_Externa: float = 0
     Comentarios_Externos: Optional[str] = ""
+
+
+class MicroEditBatchInput(BaseModel):
+    cantidad_sumar: int = 1
+    minutos_sumar: float = 0
+    nota: Optional[str] = ""
+
+
+def verify_admin_pin(x_admin_pin: Optional[str] = Header(default=None)):
+    """Protege las rutas de escritura; las consultas GET siguen siendo públicas."""
+    if not ADMIN_PASSWORD:
+        return True
+    provided = (x_admin_pin or "").strip()
+    if not provided or not hmac.compare_digest(provided, ADMIN_PASSWORD):
+        raise HTTPException(
+            status_code=401,
+            detail="Modo solo lectura: ingresa la clave de edición para guardar cambios."
+        )
+    return True
 
 
 # ==============================================================================
@@ -109,7 +137,6 @@ def _github_api_request(method: str, url: str, payload: Optional[dict] = None) -
 
 
 def pull_excel_from_github() -> bool:
-    """Descarga la última versión del Excel desde GitHub al arrancar el servidor."""
     global last_github_sync_status
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False
@@ -127,7 +154,6 @@ def pull_excel_from_github() -> bool:
 
 
 def push_excel_to_github():
-    """Sube el Excel actualizado a GitHub usando [skip ci] para no reiniciar Render."""
     global last_github_sync_status
     if not GITHUB_TOKEN or not GITHUB_REPO or not EXCEL_FILE.exists():
         return
@@ -287,6 +313,7 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             sol_d = safe_iso_date(it.get("Fecha_Solicitud"), reg_d)
             it["Fecha_Registro"] = reg_d.isoformat()
             it["Fecha_Solicitud"] = sol_d.isoformat()
+            it["Cantidad_Ediciones"] = int(it.get("Cantidad_Ediciones") or 0)
 
             ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
@@ -385,9 +412,9 @@ def ensure_excel_exists():
         ws_cat = wb.create_sheet(title="Catalogos")
         ws_cat.append(["Proyectos", "Solicitantes", "Responsables", "Tipos", "Estados", "Prioridades"])
         ws_cat.append(["T-LAB", "Calidad", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente", "1 - Urgente"])
-        ws_cat.append(["Catálogo Válvulas", "Laboratorio", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
-        ws_cat.append(["Portal Corporativo", "Comercial", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
-        ws_cat.append(["Infraestructura / BD", "Gerencia", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
+        ws_cat.append(["CRONOGRAMA", "Ingenieria", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
+        ws_cat.append(["Catálogo Válvulas", "Laboratorio", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
+        ws_cat.append(["Portal Corporativo", "Comercial", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
         wb.save(EXCEL_FILE)
         return
 
@@ -410,6 +437,7 @@ def ensure_excel_exists():
             d.setdefault("Prioridad", "3 - Normal")
             d.setdefault("Horas_Demora_Externa", 0)
             d.setdefault("Comentarios_Externos", "")
+            d.setdefault("Cantidad_Ediciones", 0)
             items.append(d)
         compute_cascade_schedule(items)
         for idx, it in enumerate(items, start=2):
@@ -428,7 +456,7 @@ def style_row(ws, row_idx: int):
     fill = zebra_fill if row_idx % 2 == 0 else white_fill
     ws.row_dimensions[row_idx].height = 34
 
-    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24}
+    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25}
     for col_idx in range(1, len(HEADERS) + 1):
         c = ws.cell(row=row_idx, column=col_idx)
         c.fill = fill
@@ -439,7 +467,9 @@ def style_row(ws, row_idx: int):
             vertical="center",
             wrap_text=True
         )
-        if col_idx in {10, 11, 12, 21, 24}:
+        if col_idx in {10, 11}:
+            c.number_format = "#,##0.00"
+        elif col_idx in {12, 21, 24, 25}:
             c.number_format = "#,##0"
         elif col_idx == 20:
             c.number_format = "+#,##0;-#,##0;0"
@@ -471,8 +501,8 @@ def read_items_from_ws(ws) -> list[dict]:
         sol_str = str(item.get("Fecha_Solicitud") or reg_str)[:10]
         item["Fecha_Registro"] = reg_str
         item["Fecha_Solicitud"] = sol_str
-        item["Horas_Est"] = float(item.get("Horas_Est") or 0)
-        item["Horas_Reales"] = float(item.get("Horas_Reales") or 0)
+        item["Horas_Est"] = round(float(item.get("Horas_Est") or 0), 2)
+        item["Horas_Reales"] = round(float(item.get("Horas_Reales") or 0), 2)
         item["Avance_Pct"] = float(item.get("Avance_Pct") or 0)
         item["Es_Adicional"] = str(item.get("Es_Adicional") or "No").strip()
         item["Estado"] = str(item.get("Estado") or "Pendiente").strip()
@@ -481,6 +511,7 @@ def read_items_from_ws(ws) -> list[dict]:
         item["Horas_Demora_Externa"] = float(item.get("Horas_Demora_Externa") or 0)
         item["Comentarios_Externos"] = str(item.get("Comentarios_Externos") or "").strip()
         item["Dias_Desde_Solicitud"] = int(item.get("Dias_Desde_Solicitud") or 0)
+        item["Cantidad_Ediciones"] = int(item.get("Cantidad_Ediciones") or 0)
         items.append(item)
     return items
 
@@ -494,12 +525,18 @@ def write_items_to_ws(ws, items: list[dict]):
 
 def get_file_metadata():
     if not EXCEL_FILE.exists():
-        return {"path": str(EXCEL_FILE), "last_modified": None, "github_sync": last_github_sync_status}
+        return {
+            "path": str(EXCEL_FILE),
+            "last_modified": None,
+            "github_sync": last_github_sync_status,
+            "auth_required": bool(ADMIN_PASSWORD)
+        }
     mtime = datetime.fromtimestamp(EXCEL_FILE.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
     return {
         "path": str(EXCEL_FILE),
         "last_modified": mtime,
-        "github_sync": last_github_sync_status
+        "github_sync": last_github_sync_status,
+        "auth_required": bool(ADMIN_PASSWORD)
     }
 
 
@@ -520,6 +557,13 @@ def serve_dashboard():
     if not INDEX_FILE.exists():
         return HTMLResponse("<h3>Coloca index.html en la misma carpeta que app.py</h3>", status_code=404)
     return INDEX_FILE.read_text(encoding="utf-8")
+
+
+@app.post("/api/auth/verify")
+def check_auth_password(payload: AuthCheckInput):
+    if not ADMIN_PASSWORD or hmac.compare_digest((payload.password or "").strip(), ADMIN_PASSWORD):
+        return {"status": "ok", "unlocked": True}
+    raise HTTPException(status_code=401, detail="Clave incorrecta")
 
 
 @app.get("/api/data")
@@ -564,7 +608,7 @@ def get_all_data(pull: bool = False):
 
 
 @app.post("/api/requerimientos")
-def create_requerimiento(payload: RequerimientoInput):
+def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -600,8 +644,8 @@ def create_requerimiento(payload: RequerimientoInput):
             "Detalle": (payload.Detalle or "").strip(),
             "Tipo": payload.Tipo.strip(),
             "Es_Adicional": payload.Es_Adicional.strip(),
-            "Horas_Est": payload.Horas_Est,
-            "Horas_Reales": payload.Horas_Reales,
+            "Horas_Est": round(float(payload.Horas_Est or 0), 2),
+            "Horas_Reales": round(float(payload.Horas_Reales or 0), 2),
             "Avance_Pct": avance_final,
             "Estado": estado_final,
             "Aprobado": payload.Aprobado.strip(),
@@ -609,7 +653,8 @@ def create_requerimiento(payload: RequerimientoInput):
             "Fecha_Registro": fecha_reg,
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
-            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()
+            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip(),
+            "Cantidad_Ediciones": max(0, int(payload.Cantidad_Ediciones or 0))
         })
 
         compute_cascade_schedule(items)
@@ -629,7 +674,7 @@ def create_requerimiento(payload: RequerimientoInput):
 
 
 @app.put("/api/requerimientos/{id_req}")
-def update_requerimiento(id_req: str, payload: RequerimientoInput):
+def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -653,8 +698,8 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "Detalle": (payload.Detalle or "").strip(),
             "Tipo": payload.Tipo.strip(),
             "Es_Adicional": payload.Es_Adicional.strip(),
-            "Horas_Est": payload.Horas_Est,
-            "Horas_Reales": payload.Horas_Reales,
+            "Horas_Est": round(float(payload.Horas_Est or 0), 2),
+            "Horas_Reales": round(float(payload.Horas_Reales or 0), 2),
             "Avance_Pct": round(float(payload.Avance_Pct or 0), 1),
             "Estado": payload.Estado.strip(),
             "Aprobado": payload.Aprobado.strip(),
@@ -662,7 +707,8 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
             "Fecha_Registro": fecha_reg,
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
-            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip()
+            "Comentarios_Externos": (payload.Comentarios_Externos or "").strip(),
+            "Cantidad_Ediciones": max(0, int(payload.Cantidad_Ediciones or 0))
         })
 
         compute_cascade_schedule(items)
@@ -679,8 +725,53 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput):
         }
 
 
+@app.patch("/api/requerimientos/{id_req}/ediciones")
+def patch_sumar_ediciones(id_req: str, payload: MicroEditBatchInput, _auth: bool = Depends(verify_admin_pin)):
+    """Suma cantidad de ediciones rápidas y convierte minutos a horas reales acumuladas."""
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
+
+        target = next((it for it in items if str(it.get("ID_Req")).strip() == id_req.strip()), None)
+        if not target:
+            wb.close()
+            raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
+
+        cant_add = max(0, int(payload.cantidad_sumar or 0))
+        mins_add = max(0.0, float(payload.minutos_sumar or 0))
+        horas_add = round(mins_add / 60.0, 2)
+
+        target["Cantidad_Ediciones"] = int(target.get("Cantidad_Ediciones") or 0) + cant_add
+        target["Horas_Reales"] = round(float(target.get("Horas_Reales") or 0) + horas_add, 2)
+        if float(target.get("Horas_Est") or 0) < target["Horas_Reales"]:
+            target["Horas_Est"] = target["Horas_Reales"]
+
+        nota_clean = (payload.nota or "").strip()
+        if nota_clean:
+            prev_detail = (target.get("Detalle") or "").strip()
+            stamp = datetime.now().strftime("%Y-%m-%d")
+            entry = f"[{stamp}: +{cant_add} ed. / +{int(mins_add)} min] {nota_clean}"
+            target["Detalle"] = f"{prev_detail} | {entry}".strip(" |")
+
+        compute_cascade_schedule(items)
+        write_items_to_ws(ws, items)
+        save_workbook_safe(wb, sync_cloud=True)
+        wb.close()
+
+        return {
+            "status": "ok",
+            "ID_Req": id_req,
+            "Cantidad_Ediciones": target["Cantidad_Ediciones"],
+            "Horas_Reales": target["Horas_Reales"],
+            "requerimientos": items,
+            "file_info": get_file_metadata()
+        }
+
+
 @app.patch("/api/requerimientos/{id_req}/progreso")
-def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
+def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -706,7 +797,7 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
         target["Estado"] = nuevo_estado
         target["Avance_Pct"] = nuevo_avance
         if payload.Horas_Reales is not None:
-            target["Horas_Reales"] = float(payload.Horas_Reales)
+            target["Horas_Reales"] = round(float(payload.Horas_Reales), 2)
 
         compute_cascade_schedule(items)
         write_items_to_ws(ws, items)
@@ -724,7 +815,7 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput):
 
 
 @app.patch("/api/requerimientos/{id_req}/prioridad")
-def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
+def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -755,7 +846,7 @@ def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput):
 
 
 @app.patch("/api/requerimientos/{id_req}/demora")
-def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput):
+def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
@@ -787,7 +878,7 @@ def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput):
 
 
 @app.delete("/api/requerimientos/{id_req}")
-def delete_requerimiento(id_req: str):
+def delete_requerimiento(id_req: str, _auth: bool = Depends(verify_admin_pin)):
     with excel_lock:
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)

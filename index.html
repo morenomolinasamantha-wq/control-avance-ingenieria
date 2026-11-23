@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=nbtuswjgyzf6HWrnOTGBVriEINDjCPwhTEZz4_vK6B7JpZLO4yjOwyzc6_NF0Ype5DxrHApQayXgj1Wtt2Gg4e7LMrgwKSjYkAIpgEPPJuZuWkdAJL7xe9nDfJFlnCMBQTyZDlIHINVSP8OKQKpdK2ESHAsfOgldkSdAY15jjr5PLclvEHIIAsM-vgLo60uEaCHbhqQmVf0bxJ-vruvvW4LrLHW4rPD5UANpSa6gU8tGA2fkK8_IDvyfhQSW0Asl79yToecbEJMMi15hMOf0kAvvsafiSdNyLhNDC98-8q8ZuTe8sYOCl7R1kjPXXMJl" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=vbpM_TnvddEtBgZd6xySb_qOlj9v90c95DjAppSBdc5HfSlamQoLCwVuqqtpzN7ZckyiQh028bsmcZbqgNaf1qT-JxB_FWAvRZS_yokaozVDRczzqd4QYVgnP3-Is0FAw0qTD7Ve55bPJlNxEoWuE2UiR_7IaXQcUuHpPogO2ICH_SEZhaxolRy4HtgsPuxPKDYkuYRF0cbfMbRSVv3ck88Ftl2ymSpkrV0e5Rib6FGsXDeJXbh74S2ooviTplhIWtiQsSji1fZXXzfCsqnZ8BefkFmpK0CFL1RrrOtGmvDm-MpEvsCBzEkTsWfwJ0WU" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
        1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (GRAFITO & PAPEL CÁLIDO)
@@ -267,6 +267,18 @@
       background: var(--tone-steel-soft);
       color: var(--tone-steel);
       border-color: rgba(91, 132, 177, 0.35);
+    }
+
+    .btn-lock-locked {
+      background: var(--tone-ochre-soft);
+      color: var(--tone-ochre);
+      border-color: rgba(212, 150, 59, 0.35);
+    }
+
+    .btn-lock-unlocked {
+      background: var(--tone-sage-soft);
+      color: var(--tone-sage);
+      border-color: rgba(78, 159, 120, 0.35);
     }
 
     /* ==========================================================================
@@ -583,7 +595,7 @@
     }
 
     /* ==========================================================================
-       7. MESA DE TRABAJO MULTI-VISTA (CERO SCROLL HORIZONTAL)
+       7. MESA DE TRABAJO MULTI-VISTA (CERO SCROLL HORIZONTAL + MODO SOLO LECTURA)
        ========================================================================== */
     .workbench-card {
       background: var(--bg-surface);
@@ -641,6 +653,16 @@
     col.col-prog    { width: 15%; }
     col.col-date    { width: 13%; }
     col.col-actions { width: 9%; }
+
+    body.is-locked col.col-actions,
+    body.is-locked .actions-col-cell,
+    body.is-locked .quick-step-row {
+      display: none;
+    }
+
+    body.is-locked col.col-desc {
+      width: 41%;
+    }
 
     th {
       padding: 10px 12px;
@@ -766,6 +788,14 @@
       text-decoration: underline;
     }
 
+    .micro-badge-row {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
     .ext-comment-box {
       margin-top: 7px;
       padding: 6px 9px;
@@ -807,6 +837,13 @@
       background-size: 10px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23989EA8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
       transition: all var(--transition-fast);
+    }
+
+    .pill-select:disabled {
+      cursor: default;
+      opacity: 0.92;
+      background-image: none;
+      padding-right: 10px;
     }
 
     .status-Pendiente {
@@ -879,6 +916,11 @@
       background: var(--bg-elevated);
       outline: none;
       cursor: pointer;
+    }
+
+    .progress-slider:disabled {
+      cursor: default;
+      opacity: 0.7;
     }
 
     .progress-slider::-webkit-slider-thumb {
@@ -978,13 +1020,13 @@
     }
 
     .icon-btn {
-      height: 26px;
-      padding: 0 8px;
+      height: 25px;
+      padding: 0 7px;
       border-radius: 6px;
       background: var(--bg-elevated);
       border: 1px solid var(--border-hairline);
       color: var(--ink-secondary);
-      font-size: 0.72rem;
+      font-size: 0.71rem;
       font-family: inherit;
       cursor: pointer;
       transition: all var(--transition-fast);
@@ -995,6 +1037,16 @@
     .icon-btn:hover {
       color: var(--ink-primary);
       border-color: var(--border-strong);
+    }
+
+    .icon-btn.micro-btn {
+      color: var(--tone-sage);
+      border-color: rgba(78, 159, 120, 0.32);
+    }
+
+    .icon-btn.micro-btn:hover {
+      background: var(--tone-sage-soft);
+      border-color: var(--tone-sage);
     }
 
     .icon-btn.ext-btn {
@@ -1013,7 +1065,7 @@
     }
 
     /* ==========================================================================
-       8. VISTA 2: CRONOGRAMA VISUAL / MINI-GANTT CON ESPERA EN COLA Y FESTIVOS
+       8. VISTA 2: CRONOGRAMA VISUAL / MINI-GANTT
        ========================================================================== */
     .gantt-container {
       padding: 18px;
@@ -1402,7 +1454,7 @@
     }
   </style>
 </head>
-<body>
+<body class="is-locked">
 
   <!-- TOP COMMAND HEADER -->
   <header class="topbar">
@@ -1420,11 +1472,12 @@
       </div>
 
       <div class="topbar-actions">
+        <button class="btn btn-lock-locked" id="lockBtn" onclick="toggleAdminLock()">Solo Lectura · Desbloquear</button>
         <button class="btn btn-ghost" id="simToggleBtn" onclick="toggleSimulator()">Simulador Capacidad</button>
         <button class="btn btn-ghost" onclick="copyExecutiveReport()">Copiar Reporte</button>
         <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Papel Cálido</button>
         <a class="btn btn-secondary" href="/api/export" target="_blank">Exportar .xlsx</a>
-        <button class="btn btn-primary" onclick="openDrawer()">+ Nuevo</button>
+        <button class="btn btn-primary" id="newProcBtn" style="display:none;" onclick="openDrawer()">+ Nuevo</button>
       </div>
     </div>
   </header>
@@ -1543,7 +1596,7 @@
       <div class="workbench-header">
         <div>
           <h3 class="card-title">Cronograma Dinámico de Entregables</h3>
-          <p class="card-desc">Incluye fecha real de solicitud, tiempo en espera por priorización y entrega estimada en días hábiles</p>
+          <p class="card-desc" id="workbenchSubtitle">Vista de consulta en tiempo real · Desbloquea con clave para editar o sumar ediciones rápidas</p>
         </div>
 
         <div class="workbench-right">
@@ -1571,18 +1624,18 @@
           <thead>
             <tr>
               <th>ID · Proyecto · Solicitud</th>
-              <th>Procedimiento y Notas Externas</th>
+              <th>Procedimiento y Acumulado</th>
               <th>Prioridad y Estado</th>
               <th>Avance %</th>
               <th>Entrega Real y Horas</th>
-              <th>Acciones</th>
+              <th class="actions-col-cell">Acciones</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
 
-      <!-- VISTA 2: LÍNEA DE TIEMPO / MINI-GANTT CON FESTIVOS COLOMBIA -->
+      <!-- VISTA 2: LÍNEA DE TIEMPO / MINI-GANTT -->
       <div class="gantt-container" id="ganttViewContainer"></div>
 
       <!-- VISTA 3: TABLERO KANBAN -->
@@ -1590,7 +1643,80 @@
     </section>
   </main>
 
-  <!-- MODAL RÁPIDO: DEMORA EXTERNA Y COMENTARIOS -->
+  <!-- MODAL 1: DESBLOQUEO DE EDICIÓN CON CLAVE -->
+  <div class="modal-backdrop" id="authModal" onclick="if(event.target===this) closeAuthModal()">
+    <div class="modal-card" style="width:390px;">
+      <div class="drawer-top">
+        <h2>Desbloquear Modo Edición</h2>
+        <button class="btn btn-ghost" onclick="closeAuthModal()">Cerrar</button>
+      </div>
+      <form onsubmit="submitAuthModal(event)">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div class="field">
+            <label>Contraseña de Ingeniería</label>
+            <input type="password" id="adminPasswordInput" placeholder="Ingresa tu clave..." required autocomplete="current-password" />
+          </div>
+          <div class="sync-hint">
+            Mientras esté bloqueado, cualquier área o gerencia puede consultar el tablero y exportar el Excel sin riesgo de modificar tus datos.
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="closeAuthModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Desbloquear</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: SUMAR MICRO-EDICIONES Y MINUTOS / HORAS -->
+  <div class="modal-backdrop" id="microModal" onclick="if(event.target===this) closeMicroModal()">
+    <div class="modal-card">
+      <div class="drawer-top">
+        <h2 id="microModalTitle">Sumar Ediciones y Tiempo Invertido</h2>
+        <button class="btn btn-ghost" onclick="closeMicroModal()">Cerrar</button>
+      </div>
+
+      <form id="microForm" onsubmit="submitMicroModal(event)">
+        <input type="hidden" id="microIdReq" value="" />
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="field">
+              <label>Cantidad de ediciones a sumar</label>
+              <input type="number" id="microCountInput" min="0" step="1" value="1" required />
+            </div>
+            <div class="field">
+              <label>Tiempo invertido (Minutos)</label>
+              <input type="number" id="microMinutesInput" min="0" step="1" value="15" required oninput="updateMicroHoursPreview()" />
+            </div>
+          </div>
+
+          <div class="chip-row">
+            <button type="button" class="preset-chip" onclick="setMicroPreset(1, 10)">+1 ed. · 10m</button>
+            <button type="button" class="preset-chip" onclick="setMicroPreset(1, 15)">+1 ed. · 15m</button>
+            <button type="button" class="preset-chip" onclick="setMicroPreset(1, 30)">+1 ed. · 30m</button>
+            <button type="button" class="preset-chip" onclick="setMicroPreset(1, 60)">+1 ed. · 1h</button>
+            <button type="button" class="preset-chip" onclick="setMicroPreset(5, 120)">+5 ed. · 2h</button>
+          </div>
+
+          <div class="field">
+            <label>Nota breve de lo ajustado (Opcional)</label>
+            <input type="text" id="microNoteInput" placeholder="Ej. Ajuste de texto en certificado, cambio de estado de orden..." />
+          </div>
+
+          <div class="sync-hint" id="microPreviewHint">
+            Se sumará <strong>+1 edición</strong> y <strong>+0,25 h</strong> (15 min) al acumulado real de este bloque.
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+            <button type="button" class="btn btn-ghost" onclick="closeMicroModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Sumar al Acumulado</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: DEMORA EXTERNA Y COMENTARIOS -->
   <div class="modal-backdrop" id="delayModal" onclick="if(event.target===this) closeDelayModal()">
     <div class="modal-card">
       <div class="drawer-top">
@@ -1650,12 +1776,12 @@
 
           <div class="field">
             <label>Fase / Etapa *</label>
-            <input type="text" id="inpFase" required placeholder="Ej. Etapa 1" />
+            <input type="text" id="inpFase" required placeholder="Ej. Soporte / Ediciones" />
           </div>
 
           <div class="field">
             <label>Quién Solicita (Área) *</label>
-            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Calidad" />
+            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Calidad / Comercial" />
             <datalist id="dlSolicitantes"></datalist>
           </div>
 
@@ -1675,18 +1801,19 @@
             <input type="date" id="inpFechaRegistro" />
           </div>
 
-          <div class="sync-hint" style="margin-top:-4px;">
-            Si el requerimiento te lo pidieron hace días o semanas pero lo ingresas hoy porque se priorizaron otros entregables, selecciona arriba la <strong>fecha real en que se pidió</strong> para evidenciar el tiempo en cola.
-          </div>
-
           <div class="field span-2">
             <label>Descripción Técnica del Procedimiento *</label>
-            <input type="text" id="inpDescripcion" required placeholder="Nombre claro de la tarea o procedimiento" />
+            <input type="text" id="inpDescripcion" required placeholder="Ej. Bolsa de ediciones menores y ajustes rápidos solicitados" />
           </div>
 
           <div class="field span-2">
             <label>Detalle Explicativo</label>
-            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento y su alcance..."></textarea>
+            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento o bolsa de ajustes..."></textarea>
+          </div>
+
+          <div class="field">
+            <label>Cantidad de Ediciones Acumuladas</label>
+            <input type="number" id="inpCantEdiciones" min="0" step="1" value="0" />
           </div>
 
           <div class="field">
@@ -1708,13 +1835,23 @@
           </div>
 
           <div class="field">
+            <label>Tipo</label>
+            <select id="inpTipo">
+              <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
+              <option value="Mejora">Mejora</option>
+              <option value="Corrección">Corrección</option>
+              <option value="Soporte">Soporte</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label>Horas Estimadas *</label>
-            <input type="number" id="inpHorasEst" min="0" step="0.5" required value="8" />
+            <input type="number" id="inpHorasEst" min="0" step="0.05" required value="8" />
           </div>
 
           <div class="field">
             <label>Horas Reales Invertidas</label>
-            <input type="number" id="inpHorasReales" min="0" step="0.5" required value="0" />
+            <input type="number" id="inpHorasReales" min="0" step="0.05" required value="0" />
           </div>
 
           <div class="field">
@@ -1738,26 +1875,16 @@
           </div>
 
           <div class="field">
-            <label>Tipo</label>
-            <select id="inpTipo">
-              <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
-              <option value="Mejora">Mejora</option>
-              <option value="Corrección">Corrección</option>
-              <option value="Soporte">Soporte</option>
+            <label>Aprobación</label>
+            <select id="inpAprobado">
+              <option value="Aprobado">Aprobado</option>
+              <option value="Pendiente">Pendiente de Aprobación</option>
             </select>
           </div>
 
           <div class="field span-2">
             <label>Comentarios por Motivos Externos</label>
             <textarea id="inpComentariosExt" placeholder="Notas sobre dependencias externas, aprobaciones pendientes o bloqueos..."></textarea>
-          </div>
-
-          <div class="field span-2">
-            <label>Aprobación</label>
-            <select id="inpAprobado">
-              <option value="Aprobado">Aprobado</option>
-              <option value="Pendiente">Pendiente de Aprobación</option>
-            </select>
           </div>
         </div>
 
@@ -1773,12 +1900,18 @@
 
   <script>
     const FALLBACK_DATA = [
-      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
-      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" },
-      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 50, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-20", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "" }
+      { ID_Req: "ING-001", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Correo sin spam", Detalle: "Experimentar una nueva alternativa de correo automaticos sin spam ni suplantación", Tipo: "Mejora", Es_Adicional: "No", Horas_Est: 20, Horas_Reales: 22, Avance_Pct: 80, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-11", Fecha_Registro: "2026-11-20", Prioridad: "1 - Urgente", Horas_Demora_Externa: 24, Comentarios_Externos: "Esperando el correo nuevo de notificaciones. Demora por pruebas con clientes", Cantidad_Ediciones: 0 },
+      { ID_Req: "ING-002", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Opción de devolver ficha de aplicación a firma de cliente", Detalle: "Se entrega la opción mas amigable para devolver una ficha de aplicación por edición de datos al cliente, siguiendo el procedimiento y conservando la legibilidad de datos para calibrar.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 10, Avance_Pct: 80, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-11", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "", Cantidad_Ediciones: 0 },
+      { ID_Req: "ING-003", Proyecto: "T-LAB", Fase_Etapa: "Etapa 1", Solicitante: "Calidad", Responsable: "Samantha Moreno", Descripcion: "Rol metrologo y almacen", Detalle: "Se entrega una producción unica por perfil, en este caso, rol metrologo y rol de almacen. Además, se incorpora la asignacion de producción para los metrologos y realicen sus respectivas calibraciones.", Tipo: "Funcionalidad Nueva", Es_Adicional: "Sí", Horas_Est: 8, Horas_Reales: 15, Avance_Pct: 80, Estado: "En Desarrollo", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-11", Fecha_Registro: "2026-11-20", Prioridad: "2 - Alta", Horas_Demora_Externa: 0, Comentarios_Externos: "", Cantidad_Ediciones: 0 },
+      { ID_Req: "ING-004", Proyecto: "CRONOGRAMA", Fase_Etapa: "REPORTE", Solicitante: "Ingenieria", Responsable: "Samantha Moreno", Descripcion: "Crear un sistema de reporte de proyectos/entregables", Detalle: "Entregar un sistema de reportes de proyectos/entregables para el area de ingenieria que se pueda visualizar en tiempo real.", Tipo: "Funcionalidad Nueva", Es_Adicional: "No", Horas_Est: 16, Horas_Reales: 20, Avance_Pct: 100, Estado: "Terminado", Aprobado: "Aprobado", Fecha_Solicitud: "2026-11-18", Fecha_Registro: "2026-11-23", Prioridad: "3 - Normal", Horas_Demora_Externa: 0, Comentarios_Externos: "", Cantidad_Ediciones: 0 }
     ];
 
+    const PIN_STORAGE_KEY = "ing_bi_admin_pin";
+    const LOCAL_STORAGE_KEY = "ing_bi_local_items_v1";
     const holidayMapCache = {};
+
+    let adminPin = sessionStorage.getItem(PIN_STORAGE_KEY) || "";
+    let isUnlocked = Boolean(adminPin);
     let simHoursPerDay = 8.0;
     let simCapacityMult = 1.0;
 
@@ -1796,6 +1929,104 @@
     let chartDistribution = null;
 
     /* ==========================================================================
+       CONTROL DE ACCESO (SOLO LECTURA vs EDICIÓN CON CLAVE)
+       ========================================================================== */
+    function updateLockUI() {
+      const body = document.body;
+      const btn = document.getElementById("lockBtn");
+      const newBtn = document.getElementById("newProcBtn");
+      const sub = document.getElementById("workbenchSubtitle");
+
+      if (isUnlocked) {
+        body.classList.remove("is-locked");
+        btn.className = "btn btn-lock-unlocked";
+        btn.textContent = "Edición Activa · Bloquear";
+        newBtn.style.display = "inline-flex";
+        sub.textContent = "Modo edición activo · Todos los cambios se guardan en tiempo real";
+      } else {
+        body.classList.add("is-locked");
+        btn.className = "btn btn-lock-locked";
+        btn.textContent = "Solo Lectura · Desbloquear";
+        newBtn.style.display = "none";
+        sub.textContent = "Vista de consulta en tiempo real · Desbloquea con clave para editar o sumar ediciones";
+      }
+      renderActiveView();
+    }
+
+    function toggleAdminLock() {
+      if (isUnlocked) {
+        adminPin = "";
+        isUnlocked = false;
+        sessionStorage.removeItem(PIN_STORAGE_KEY);
+        updateLockUI();
+        showToast("Tablero bloqueado en modo solo lectura");
+      } else {
+        document.getElementById("adminPasswordInput").value = "";
+        document.getElementById("authModal").classList.add("open");
+        setTimeout(() => document.getElementById("adminPasswordInput").focus(), 60);
+      }
+    }
+
+    function closeAuthModal() {
+      document.getElementById("authModal").classList.remove("open");
+    }
+
+    async function submitAuthModal(e) {
+      e.preventDefault();
+      const pwd = (document.getElementById("adminPasswordInput").value || "").trim();
+      if (!pwd) return;
+
+      if (!isBackendConnected) {
+        if (pwd === "tecval2026") {
+          adminPin = pwd;
+          isUnlocked = true;
+          sessionStorage.setItem(PIN_STORAGE_KEY, pwd);
+          closeAuthModal();
+          updateLockUI();
+          showToast("Modo edición desbloqueado");
+        } else {
+          showToast("Clave incorrecta", true);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pwd })
+        });
+        if (res.ok) {
+          adminPin = pwd;
+          isUnlocked = true;
+          sessionStorage.setItem(PIN_STORAGE_KEY, pwd);
+          closeAuthModal();
+          updateLockUI();
+          showToast("Modo edición desbloqueado correctamente");
+        } else {
+          showToast("Contraseña incorrecta", true);
+        }
+      } catch (err) {
+        showToast("No se pudo verificar la clave con el servidor", true);
+      }
+    }
+
+    function authHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "X-Admin-Pin": adminPin
+      };
+    }
+
+    function handleUnauthorized() {
+      adminPin = "";
+      isUnlocked = false;
+      sessionStorage.removeItem(PIN_STORAGE_KEY);
+      updateLockUI();
+      showToast("Sesión bloqueada o clave inválida. Desbloquea para guardar.", true);
+    }
+
+    /* ==========================================================================
        CALENDARIO LABORAL COLOMBIA (FINES DE SEMANA + FESTIVOS LEY EMILIANI)
        ========================================================================== */
     function easterSunday(year) {
@@ -1804,7 +2035,7 @@
       const c = year % 100;
       const d = Math.floor(b / 4);
       const e = b % 4;
-      const f = Math.floor((b + 8) / 25);
+      const f = (b + 8) // 25;
       const g = Math.floor((b - f + 1) / 3);
       const h = (19 * a + b - d - g + 15) % 30;
       const i = Math.floor(c / 4);
@@ -1941,6 +2172,7 @@
           const solD = it.Fecha_Solicitud ? parseIsoDate(it.Fecha_Solicitud) : regD;
           it.Fecha_Registro = formatIsoDate(regD);
           it.Fecha_Solicitud = formatIsoDate(solD);
+          it.Cantidad_Ediciones = Number(it.Cantidad_Ediciones || 0);
 
           const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
           const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
@@ -2100,6 +2332,11 @@
       el._timer = setTimeout(() => el.classList.remove("show"), 3800);
     }
 
+    function formatHoursLabel(h) {
+      const num = Number(h || 0);
+      return Number.isInteger(num) ? `${num}h` : `${num.toFixed(1)}h`;
+    }
+
     function copyExecutiveReport() {
       const lines = ["📊 *REPORTE DE AVANCE Y ENTREGAS - INGENIERÍA*", ""];
       const byProj = {};
@@ -2120,20 +2357,19 @@
       lines.push("", "*Detalle de procedimientos:*");
       filteredData.forEach(r => {
         const ext = Number(r.Horas_Demora_Externa || 0) > 0 ? ` (+${r.Horas_Demora_Externa}h demora ext.)` : "";
+        const eds = Number(r.Cantidad_Ediciones || 0) > 0 ? ` [${r.Cantidad_Ediciones} ed. · ${formatHoursLabel(r.Horas_Reales)}]` : "";
         const solStr = r.Fecha_Solicitud ? `Pedido: ${r.Fecha_Solicitud} | ` : "";
-        lines.push(`- [${r.ID_Req}] ${r.Descripcion}: ${r.Avance_Pct}% (${r.Estado}) | ${solStr}Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
+        lines.push(`- [${r.ID_Req}] ${r.Descripcion}${eds}: ${r.Avance_Pct}% (${r.Estado}) | ${solStr}Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
       });
 
       navigator.clipboard.writeText(lines.join("\n")).then(() => {
-        showToast("Resumen ejecutivo copiado al portapapeles (listo para pegar)");
+        showToast("Resumen ejecutivo copiado al portapapeles");
       });
     }
 
     /* ==========================================================================
        CARGA Y SINCRONIZACIÓN CON EXCEL + RESPALDO LOCALSTORAGE
        ========================================================================== */
-    const LOCAL_STORAGE_KEY = "ing_bi_local_items_v1";
-
     function saveLocalBackup() {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allData));
@@ -2177,7 +2413,7 @@
         computeLocalCascade(allData);
         isBackendConnected = false;
         document.getElementById("syncDot").classList.add("offline");
-        document.getElementById("syncText").textContent = "Guardado en navegador (sin servidor activo)";
+        document.getElementById("syncText").textContent = "Guardado en navegador";
       }
       populateDropdowns();
       applyFilters();
@@ -2299,6 +2535,7 @@
       let globalWeighted = 0;
       let globalExtra = 0;
       let globalExtDelay = 0;
+      let globalEdiciones = 0;
       let globalMaxRealDate = "";
 
       allData.forEach(r => {
@@ -2306,21 +2543,24 @@
         const pct = Number(r.Avance_Pct || 0);
         const isExtra = r.Es_Adicional === "Sí";
         const extH = Number(r.Horas_Demora_Externa || 0);
+        const eds = Number(r.Cantidad_Ediciones || 0);
         const fReal = String(r.Fecha_Real_Entrega || r.Fecha_Tentativa || "");
 
         globalEst += hEst;
         globalWeighted += hEst * (pct / 100);
         if (isExtra) globalExtra += hEst;
         globalExtDelay += extH;
+        globalEdiciones += eds;
         if (fReal && fReal > globalMaxRealDate) globalMaxRealDate = fReal;
 
         if (!byProject[r.Proyecto]) {
-          byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, extDelay: 0, count: 0, maxDate: "" };
+          byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, extDelay: 0, ediciones: 0, count: 0, maxDate: "" };
         }
         byProject[r.Proyecto].est += hEst;
         byProject[r.Proyecto].weighted += hEst * (pct / 100);
         if (isExtra) byProject[r.Proyecto].extra += hEst;
         byProject[r.Proyecto].extDelay += extH;
+        byProject[r.Proyecto].ediciones += eds;
         byProject[r.Proyecto].count += 1;
         if (fReal && fReal > byProject[r.Proyecto].maxDate) {
           byProject[r.Proyecto].maxDate = fReal;
@@ -2337,6 +2577,7 @@
         hours: globalEst,
         extraHours: globalExtra,
         extDelay: globalExtDelay,
+        ediciones: globalEdiciones,
         count: allData.length,
         maxDate: globalMaxRealDate
       }));
@@ -2351,13 +2592,14 @@
           hours: info.est,
           extraHours: info.extra,
           extDelay: info.extDelay,
+          ediciones: info.ediciones,
           count: info.count,
           maxDate: info.maxDate
         }));
       });
     }
 
-    function createProjectCapsule({ key, title, pct, hours, extraHours, extDelay, count, maxDate }) {
+    function createProjectCapsule({ key, title, pct, hours, extraHours, extDelay, ediciones, count, maxDate }) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "project-card" + (selectedProject === key ? " active" : "");
@@ -2367,8 +2609,9 @@
       const circumference = 2 * Math.PI * radius;
       const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference;
       const strokeColor = pct >= 100 ? "var(--tone-sage)" : pct > 0 ? "var(--tone-steel)" : "var(--tone-neutral)";
-      const extraBadge = extraHours > 0 ? `<span class="pill-tag tag-extra">+${extraHours}h alcance</span>` : "";
+      const extraBadge = extraHours > 0 ? `<span class="pill-tag tag-extra">+${formatHoursLabel(extraHours)} alcance</span>` : "";
       const extBadge = extDelay > 0 ? `<span class="pill-tag tag-ochre">+${extDelay}h ext.</span>` : "";
+      const edBadge = ediciones > 0 ? `<span class="pill-tag tag-early">${ediciones} ediciones</span>` : "";
 
       btn.innerHTML = `
         <div class="ring-wrap">
@@ -2384,11 +2627,12 @@
           <div class="project-stats">
             <span class="tabular"><strong>${pct.toFixed(1)}%</strong></span>
             <span>·</span>
-            <span class="tabular">${hours}h</span>
+            <span class="tabular">${formatHoursLabel(hours)}</span>
             <span>·</span>
             <span>${count} proc.</span>
             ${extraBadge}
             ${extBadge}
+            ${edBadge}
           </div>
           <div class="project-delivery tabular">
             <span>Entrega real est.: <strong>${maxDate || "—"}</strong></span>
@@ -2487,7 +2731,7 @@
             type: "bar",
             stack: "estimado",
             barMaxWidth: 26,
-            data: categories.map(k => groupMap[k].orig),
+            data: categories.map(k => Math.round(groupMap[k].orig * 10) / 10),
             itemStyle: { color: steel }
           },
           {
@@ -2495,7 +2739,7 @@
             type: "bar",
             stack: "estimado",
             barMaxWidth: 26,
-            data: categories.map(k => groupMap[k].extra),
+            data: categories.map(k => Math.round(groupMap[k].extra * 10) / 10),
             itemStyle: { color: terracotta }
           },
           {
@@ -2510,7 +2754,7 @@
             name: "Horas Reales",
             type: "bar",
             barMaxWidth: 22,
-            data: categories.map(k => groupMap[k].real),
+            data: categories.map(k => Math.round(groupMap[k].real * 10) / 10),
             itemStyle: { color: sage, borderRadius: [4, 4, 0, 0] }
           }
         ]
@@ -2525,7 +2769,7 @@
         totalDistHours += h;
       });
 
-      const pieData = Object.keys(distMap).map(k => ({ name: k, value: distMap[k] }));
+      const pieData = Object.keys(distMap).map(k => ({ name: k, value: Math.round(distMap[k] * 10) / 10 }));
       chartDistribution.setOption({
         tooltip: { trigger: "item", formatter: "{b}: <b>{c}h</b> ({d}%)" },
         legend: { bottom: 0, textStyle: { color: labelColor, fontSize: 11 } },
@@ -2544,7 +2788,7 @@
           left: "center",
           top: "39%",
           style: {
-            text: `${totalDistHours}h`,
+            text: formatHoursLabel(totalDistHours),
             fill: inkColor,
             font: "600 18px 'JetBrains Mono', monospace",
             textAlign: "center"
@@ -2578,6 +2822,7 @@
     function updateSummaryStrip() {
       const totEst = filteredData.reduce((s, r) => s + Number(r.Horas_Est || 0), 0);
       const totExt = filteredData.reduce((s, r) => s + Number(r.Horas_Demora_Externa || 0), 0);
+      const totEds = filteredData.reduce((s, r) => s + Number(r.Cantidad_Ediciones || 0), 0);
       const totPend = filteredData.reduce((s, r) => {
         return s + Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
       }, 0);
@@ -2587,7 +2832,8 @@
       document.getElementById("tableSummaryStrip").innerHTML = `
         <span><strong>${filteredData.length}</strong> proc.</span>
         <span>Avance: <strong class="tabular">${viewPct.toFixed(1)}%</strong></span>
-        <span>Pendiente: <strong class="tabular">${totPend.toFixed(1)}h</strong></span>
+        <span>Pendiente: <strong class="tabular">${formatHoursLabel(totPend)}</strong></span>
+        ${totEds > 0 ? `<span class="pill-tag tag-early tabular">${totEds} ed. acumuladas</span>` : ""}
         ${totExt > 0 ? `<span class="pill-tag tag-ochre tabular">+${totExt}h ext.</span>` : ""}
       `;
     }
@@ -2610,6 +2856,7 @@
     function renderTable() {
       const tbody = document.getElementById("tableBody");
       tbody.innerHTML = "";
+      const disabledAttr = isUnlocked ? "" : "disabled";
 
       filteredData.forEach(r => {
         const tr = document.createElement("tr");
@@ -2620,7 +2867,16 @@
         const prioVal = r.Prioridad || "3 - Normal";
         const prioClass = "prio-" + prioVal.charAt(0);
         const extraTag = r.Es_Adicional === "Sí"
-          ? `<span class="pill-tag tag-extra" style="margin-left:6px;">+${r.Horas_Est}h alcance</span>`
+          ? `<span class="pill-tag tag-extra" style="margin-left:6px;">+${formatHoursLabel(r.Horas_Est)} alcance</span>`
+          : "";
+
+        const cantEd = Number(r.Cantidad_Ediciones || 0);
+        const minsTotal = Math.round(Number(r.Horas_Reales || 0) * 60);
+        const microBadgeHtml = cantEd > 0
+          ? `<div class="micro-badge-row">
+               <span class="pill-tag tag-early tabular">${cantEd} ediciones acumuladas</span>
+               <span class="pill-tag tag-steel tabular">Tiempo invertido: ${formatHoursLabel(r.Horas_Reales)} (${minsTotal} min)</span>
+             </div>`
           : "";
 
         const solDate = r.Fecha_Solicitud || r.Fecha_Registro || "—";
@@ -2649,7 +2905,7 @@
         const shift = Number(r.Desplazamiento_Dias || 0);
         const fTent = r.Fecha_Tentativa || "—";
         const fReal = r.Fecha_Real_Entrega || fTent;
-        const overrun = Number(r.Horas_Reales || 0) - Number(r.Horas_Est || 0);
+        const overrun = Math.round((Number(r.Horas_Reales || 0) - Number(r.Horas_Est || 0)) * 10) / 10;
 
         let metaLines = "";
         if (r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100) {
@@ -2667,7 +2923,7 @@
         }
 
         const overrunHtml = overrun > 0
-          ? `<span class="pill-tag tag-extra tabular" title="Horas reales superan estimadas">+${overrun}h</span>`
+          ? `<span class="pill-tag tag-extra tabular" title="Horas reales superan estimadas">+${formatHoursLabel(overrun)}</span>`
           : "";
 
         tr.innerHTML = `
@@ -2685,19 +2941,20 @@
           </td>
           <td>
             <div class="proc-title">${r.Descripcion}${extraTag}</div>
+            ${microBadgeHtml}
             ${detailHtml}
             ${commentBlock}
           </td>
           <td>
             <div class="stack-pills">
-              <select class="pill-select ${prioClass}" aria-label="Prioridad ${r.ID_Req}"
+              <select class="pill-select ${prioClass}" ${disabledAttr} aria-label="Prioridad ${r.ID_Req}"
                 onchange="handleInlinePrioridadChange('${r.ID_Req}', this.value)">
                 <option value="1 - Urgente" ${prioVal === "1 - Urgente" ? "selected" : ""}>1 - Urgente</option>
                 <option value="2 - Alta" ${prioVal === "2 - Alta" ? "selected" : ""}>2 - Alta</option>
                 <option value="3 - Normal" ${prioVal === "3 - Normal" ? "selected" : ""}>3 - Normal</option>
                 <option value="4 - Baja" ${prioVal === "4 - Baja" ? "selected" : ""}>4 - Baja</option>
               </select>
-              <select class="pill-select ${statusClass}" aria-label="Estado ${r.ID_Req}"
+              <select class="pill-select ${statusClass}" ${disabledAttr} aria-label="Estado ${r.ID_Req}"
                 onchange="handleInlineEstadoChange('${r.ID_Req}', this.value)">
                 <option value="Pendiente" ${r.Estado === "Pendiente" ? "selected" : ""}>Pendiente</option>
                 <option value="En Desarrollo" ${r.Estado === "En Desarrollo" ? "selected" : ""}>En Desarrollo</option>
@@ -2709,12 +2966,12 @@
           <td>
             <div class="progress-stack">
               <div class="progress-top-row">
-                <input type="range" class="progress-slider" min="0" max="100" step="5"
+                <input type="range" class="progress-slider" min="0" max="100" step="5" ${disabledAttr}
                   value="${r.Avance_Pct}"
                   oninput="previewSliderPct('${r.ID_Req}', this.value)"
                   onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />
                 <span class="pct-box">
-                  <input type="number" id="pct-num-${r.ID_Req}" min="0" max="100" step="1"
+                  <input type="number" id="pct-num-${r.ID_Req}" min="0" max="100" step="1" ${disabledAttr}
                     value="${Math.round(r.Avance_Pct)}"
                     onchange="handleInlineAvanceChange('${r.ID_Req}', this.value)" />%
                 </span>
@@ -2730,11 +2987,12 @@
             <span class="delivery-date tabular">${fReal}</span>
             <div class="delivery-meta">${metaLines}</div>
             <div class="hours-line tabular">
-              <strong>${r.Horas_Reales}h</strong> / ${r.Horas_Est}h ${overrunHtml}
+              <strong>${formatHoursLabel(r.Horas_Reales)}</strong> / ${formatHoursLabel(r.Horas_Est)} ${overrunHtml}
             </div>
           </td>
-          <td>
+          <td class="actions-col-cell">
             <div class="row-actions-col">
+              <button class="icon-btn micro-btn" onclick="openMicroModal('${r.ID_Req}')">+ Ediciones</button>
               <button class="icon-btn ext-btn" onclick="openDelayModal('${r.ID_Req}')">+ Demora</button>
               <button class="icon-btn" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
               <button class="icon-btn danger" onclick="deleteProc('${r.ID_Req}')">Eliminar</button>
@@ -2746,6 +3004,7 @@
     }
 
     function stepProgress(idReq, delta) {
+      if (!isUnlocked) return;
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
       const next = Math.min(100, Math.max(0, Number(item.Avance_Pct || 0) + delta));
@@ -2753,7 +3012,7 @@
     }
 
     /* ==========================================================================
-       VISTA GANTT CON ESPERA EN COLA (FECHA SOLICITUD) Y FESTIVOS COLOMBIA
+       VISTA GANTT
        ========================================================================== */
     function renderGantt() {
       const container = document.getElementById("ganttViewContainer");
@@ -2768,7 +3027,6 @@
       let maxD = new Date(Math.max(...endDates.map(d => d.getTime())));
       maxD = shiftDays(maxD, 2);
 
-      // Limitar ventana máxima a 65 días para mantener fluidez visual
       const minAllowed = shiftDays(maxD, -65);
       if (minD.getTime() < minAllowed.getTime()) minD = minAllowed;
 
@@ -2811,7 +3069,7 @@
           const t = d.getTime();
           if (t >= solD.getTime() && t < sD.getTime()) {
             const label = t === solD.getTime() ? "SOL" : "···";
-            return `<td class="${cls}"><div class="gantt-bar-queue" title="En cola desde solicitud (${r.Fecha_Solicitud}) por priorización de otros entregables">${label}</div></td>`;
+            return `<td class="${cls}"><div class="gantt-bar-queue" title="En cola desde solicitud (${r.Fecha_Solicitud})">${label}</div></td>`;
           }
           if (t >= sD.getTime() && t <= tD.getTime()) {
             const barCls = isDone ? "gantt-bar-done" : "gantt-bar-ing";
@@ -2866,6 +3124,15 @@
         const items = filteredData.filter(r => r.Estado === status);
         const cardsHtml = items.map(r => {
           const ext = Number(r.Horas_Demora_Externa || 0);
+          const eds = Number(r.Cantidad_Ediciones || 0);
+          const actionButtons = isUnlocked
+            ? `<div style="display:flex; gap:6px; margin-top:4px;">
+                 <button class="icon-btn micro-btn" style="flex:1;" onclick="openMicroModal('${r.ID_Req}')">+ Ediciones</button>
+                 <button class="icon-btn ext-btn" style="flex:1;" onclick="openDelayModal('${r.ID_Req}')">+ Demora</button>
+                 <button class="icon-btn" style="flex:1;" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
+               </div>`
+            : "";
+
           return `<div class="kanban-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <span class="id-badge tabular">${r.ID_Req}</span>
@@ -2874,15 +3141,13 @@
             <div class="proc-title" style="font-size:0.82rem;">${r.Descripcion}</div>
             <div class="proc-sub">${r.Proyecto} · ${r.Responsable}</div>
             <div class="proc-sub tabular">Pedido: <strong>${r.Fecha_Solicitud || r.Fecha_Registro}</strong></div>
+            ${eds > 0 ? `<span class="pill-tag tag-early tabular">${eds} ed. · ${formatHoursLabel(r.Horas_Reales)}</span>` : ""}
             ${ext > 0 ? `<span class="pill-tag tag-ochre tabular">+${ext}h demora externa</span>` : ""}
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.74rem;">
               <span class="tabular">Entrega: <strong>${r.Fecha_Real_Entrega}</strong></span>
               <span class="tabular"><strong>${r.Avance_Pct}%</strong></span>
             </div>
-            <div style="display:flex; gap:6px; margin-top:4px;">
-              <button class="icon-btn ext-btn" style="flex:1;" onclick="openDelayModal('${r.ID_Req}')">+ Demora</button>
-              <button class="icon-btn" style="flex:1;" onclick="openEditDrawer('${r.ID_Req}')">Editar</button>
-            </div>
+            ${actionButtons}
           </div>`;
         }).join("");
 
@@ -2919,9 +3184,101 @@
     }
 
     /* ==========================================================================
+       MODAL RÁPIDO: SUMAR MICRO-EDICIONES Y MINUTOS
+       ========================================================================== */
+    function openMicroModal(idReq) {
+      if (!isUnlocked) return toggleAdminLock();
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+      document.getElementById("microIdReq").value = idReq;
+      document.getElementById("microModalTitle").textContent = `${idReq} · Sumar Ediciones y Tiempo`;
+      document.getElementById("microCountInput").value = 1;
+      document.getElementById("microMinutesInput").value = 15;
+      document.getElementById("microNoteInput").value = "";
+      updateMicroHoursPreview();
+      document.getElementById("microModal").classList.add("open");
+    }
+
+    function closeMicroModal() {
+      document.getElementById("microModal").classList.remove("open");
+    }
+
+    function setMicroPreset(count, mins) {
+      document.getElementById("microCountInput").value = count;
+      document.getElementById("microMinutesInput").value = mins;
+      updateMicroHoursPreview();
+    }
+
+    function updateMicroHoursPreview() {
+      const c = Number(document.getElementById("microCountInput").value || 0);
+      const m = Number(document.getElementById("microMinutesInput").value || 0);
+      const hrs = (m / 60).toFixed(2);
+      document.getElementById("microPreviewHint").innerHTML =
+        `Se sumará <strong>+${c} edición(es)</strong> y <strong>+${hrs} h</strong> (${m} min) al acumulado real.`;
+    }
+
+    async function submitMicroModal(e) {
+      e.preventDefault();
+      const idReq = document.getElementById("microIdReq").value;
+      const cant = Math.max(0, parseInt(document.getElementById("microCountInput").value || "0", 10));
+      const mins = Math.max(0, Number(document.getElementById("microMinutesInput").value || 0));
+      const nota = (document.getElementById("microNoteInput").value || "").trim();
+
+      const item = allData.find(r => r.ID_Req === idReq);
+      if (!item) return;
+
+      const prevDates = snapshotDates();
+      const hrsAdd = Math.round((mins / 60) * 100) / 100;
+      item.Cantidad_Ediciones = Number(item.Cantidad_Ediciones || 0) + cant;
+      item.Horas_Reales = Math.round((Number(item.Horas_Reales || 0) + hrsAdd) * 100) / 100;
+      if (Number(item.Horas_Est || 0) < item.Horas_Reales) {
+        item.Horas_Est = item.Horas_Reales;
+      }
+
+      computeLocalCascade(allData);
+      detectShiftedRows(prevDates);
+      closeMicroModal();
+      applyFilters();
+
+      if (!isBackendConnected) {
+        saveLocalBackup();
+        showToast(`${idReq}: +${cant} ed. (+${mins} min) sumadas en navegador`, true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/requerimientos/${idReq}/ediciones`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            cantidad_sumar: cant,
+            minutos_sumar: mins,
+            nota
+          })
+        });
+        if (res.status === 401) return handleUnauthorized();
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || "Error al sumar ediciones", true);
+          await loadData(false);
+          return;
+        }
+        allData = data.requerimientos || allData;
+        computeLocalCascade(allData);
+        saveLocalBackup();
+        detectShiftedRows(prevDates);
+        applyFilters();
+        showToast(`${idReq}: total ${data.Cantidad_Ediciones} ediciones (${formatHoursLabel(data.Horas_Reales)})`);
+      } catch (err) {
+        showToast("Error de conexión al guardar ediciones", true);
+      }
+    }
+
+    /* ==========================================================================
        MODAL RÁPIDO: DEMORA POR MOTIVOS EXTERNOS Y COMENTARIOS
        ========================================================================== */
     function openDelayModal(idReq) {
+      if (!isUnlocked) return toggleAdminLock();
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
       document.getElementById("delayIdReq").value = idReq;
@@ -2962,19 +3319,21 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        saveLocalBackup(); showToast(`${idReq}: demora externa (+${horasExt}h) guardada en navegador`, true);
+        saveLocalBackup();
+        showToast(`${idReq}: demora externa (+${horasExt}h) guardada en navegador`, true);
         return;
       }
 
       try {
         const res = await fetch(`/api/requerimientos/${idReq}/demora`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({
             Horas_Demora_Externa: horasExt,
             Comentarios_Externos: commentExt
           })
         });
+        if (res.status === 401) return handleUnauthorized();
         const data = await res.json();
         if (!res.ok) {
           showToast(data.detail || "Error al guardar demora externa", true);
@@ -2996,6 +3355,7 @@
        EDICIONES EN LÍNEA (PRIORIDAD, ESTADO, % AVANCE)
        ========================================================================== */
     async function handleInlinePrioridadChange(idReq, nuevaPrioridad) {
+      if (!isUnlocked) return toggleAdminLock();
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
 
@@ -3006,16 +3366,18 @@
       applyFilters();
 
       if (!isBackendConnected) {
-        saveLocalBackup(); showToast(`${idReq} -> ${nuevaPrioridad}: guardado en navegador`, true);
+        saveLocalBackup();
+        showToast(`${idReq} -> ${nuevaPrioridad}: guardado en navegador`, true);
         return;
       }
 
       try {
         const res = await fetch(`/api/requerimientos/${idReq}/prioridad`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ Prioridad: nuevaPrioridad })
         });
+        if (res.status === 401) return handleUnauthorized();
         const data = await res.json();
         if (!res.ok) {
           showToast(data.detail || "No se pudo actualizar en Excel", true);
@@ -3034,6 +3396,7 @@
     }
 
     async function handleInlineEstadoChange(idReq, nuevoEstado) {
+      if (!isUnlocked) return toggleAdminLock();
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
 
@@ -3048,6 +3411,7 @@
     }
 
     async function handleInlineAvanceChange(idReq, rawVal) {
+      if (!isUnlocked) return toggleAdminLock();
       const item = allData.find(r => r.ID_Req === idReq);
       if (!item) return;
 
@@ -3064,15 +3428,17 @@
 
     async function persistInlineProgress(idReq, patchPayload, prevDates) {
       if (!isBackendConnected) {
-        saveLocalBackup(); showToast(`${idReq}: actualizado en navegador`, true);
+        saveLocalBackup();
+        showToast(`${idReq}: actualizado en navegador`, true);
         return;
       }
       try {
         const res = await fetch(`/api/requerimientos/${idReq}/progreso`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(patchPayload)
         });
+        if (res.status === 401) return handleUnauthorized();
         const data = await res.json();
         if (!res.ok) {
           showToast(data.detail || "No se pudo guardar en Excel", true);
@@ -3113,6 +3479,7 @@
     }
 
     function openDrawer(req = null) {
+      if (!isUnlocked) return toggleAdminLock();
       document.getElementById("drawerOverlay").classList.add("open");
       if (req) {
         document.getElementById("drawerTitle").textContent = `Editar ${req.ID_Req}`;
@@ -3125,6 +3492,7 @@
         document.getElementById("inpFechaRegistro").value = (req.Fecha_Registro || todayIsoString()).slice(0, 10);
         document.getElementById("inpDescripcion").value = req.Descripcion;
         document.getElementById("inpDetalle").value = req.Detalle || "";
+        document.getElementById("inpCantEdiciones").value = Number(req.Cantidad_Ediciones || 0);
         document.getElementById("inpPrioridad").value = req.Prioridad || "3 - Normal";
         document.getElementById("inpAdicional").value = req.Es_Adicional;
         document.getElementById("inpHorasEst").value = req.Horas_Est;
@@ -3142,6 +3510,7 @@
         document.getElementById("procForm").reset();
         document.getElementById("inpFechaSolicitud").value = today;
         document.getElementById("inpFechaRegistro").value = today;
+        document.getElementById("inpCantEdiciones").value = 0;
         document.getElementById("inpPrioridad").value = "3 - Normal";
         document.getElementById("inpEstado").value = "Pendiente";
         document.getElementById("inpAvance").value = 0;
@@ -3174,6 +3543,7 @@
         Fecha_Registro: fechaReg,
         Descripcion: document.getElementById("inpDescripcion").value,
         Detalle: document.getElementById("inpDetalle").value,
+        Cantidad_Ediciones: Number(document.getElementById("inpCantEdiciones").value || 0),
         Prioridad: document.getElementById("inpPrioridad").value,
         Es_Adicional: document.getElementById("inpAdicional").value,
         Horas_Est: Number(document.getElementById("inpHorasEst").value || 0),
@@ -3201,7 +3571,8 @@
         closeDrawer();
         populateDropdowns();
         applyFilters();
-        saveLocalBackup(); showToast("Procedimiento guardado en este navegador", true);
+        saveLocalBackup();
+        showToast("Procedimiento guardado en este navegador", true);
         return;
       }
 
@@ -3209,9 +3580,13 @@
       const method = editId ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
+      if (res.status === 401) {
+        closeDrawer();
+        return handleUnauthorized();
+      }
       const data = await res.json();
       if (res.ok) {
         closeDrawer();
@@ -3225,6 +3600,7 @@
     }
 
     async function deleteProc(idReq) {
+      if (!isUnlocked) return toggleAdminLock();
       if (!confirm(`¿Eliminar ${idReq} del archivo Excel?`)) return;
       const prevDates = snapshotDates();
       if (!isBackendConnected) {
@@ -3237,7 +3613,11 @@
         showToast(`${idReq} eliminado del navegador`, true);
         return;
       }
-      const res = await fetch(`/api/requerimientos/${idReq}`, { method: "DELETE" });
+      const res = await fetch(`/api/requerimientos/${idReq}`, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      if (res.status === 401) return handleUnauthorized();
       const data = await res.json();
       if (res.ok) {
         await loadData(false);
@@ -3254,6 +3634,8 @@
         e.preventDefault();
         document.getElementById("searchInput").focus();
       } else if (e.key === "Escape") {
+        closeAuthModal();
+        closeMicroModal();
         closeDelayModal();
         closeDrawer();
       }
@@ -3261,6 +3643,7 @@
 
     window.addEventListener("DOMContentLoaded", () => {
       initTheme();
+      updateLockUI();
       loadData(false);
     });
   </script>
