@@ -11,7 +11,7 @@
   <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=vbpM_TnvddEtBgZd6xySb_qOlj9v90c95DjAppSBdc5HfSlamQoLCwVuqqtpzN7ZckyiQh028bsmcZbqgNaf1qT-JxB_FWAvRZS_yokaozVDRczzqd4QYVgnP3-Is0FAw0qTD7Ve55bPJlNxEoWuE2UiR_7IaXQcUuHpPogO2ICH_SEZhaxolRy4HtgsPuxPKDYkuYRF0cbfMbRSVv3ck88Ftl2ymSpkrV0e5Rib6FGsXDeJXbh74S2ooviTplhIWtiQsSji1fZXXzfCsqnZ8BefkFmpK0CFL1RrrOtGmvDm-MpEvsCBzEkTsWfwJ0WU" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
     /* ==========================================================================
-       1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (GRAFITO & PAPEL CÁLIDO)
+       1. DESIGN TOKENS — LOW-GLARE ERGONOMIC PALETTE (modo claro y oscuro)
        ========================================================================== */
     :root,
     [data-theme="graphite"] {
@@ -2306,14 +2306,14 @@
       const next = root.getAttribute("data-theme") === "graphite" ? "paper" : "graphite";
       root.setAttribute("data-theme", next);
       localStorage.setItem("ing_bi_theme", next);
-      document.getElementById("themeBtn").textContent = next === "graphite" ? "Papel Cálido" : "Grafito";
+      document.getElementById("themeBtn").textContent = next === "graphite" ? "Modo Claro" : "Modo Oscuro";
       renderCharts();
     }
 
     function initTheme() {
       const saved = localStorage.getItem("ing_bi_theme") || "graphite";
       document.documentElement.setAttribute("data-theme", saved);
-      document.getElementById("themeBtn").textContent = saved === "graphite" ? "Papel Cálido" : "Grafito";
+      document.getElementById("themeBtn").textContent = saved === "graphite" ? "Modo Claro" : "Modo Oscuro";
     }
 
     function toggleCharts() {

@@ -491,8 +491,8 @@ def save_workbook_safe(wb, sync_cloud: bool = True):
             status_code=423,
             detail="El archivo 'requerimientos_ingenieria.xlsx' está abierto en Excel. Ciérralo para guardar los cambios en disco."
         )
-    if sync_cloud:
-        trigger_async_github_sync()
+    if sync_cloud and GITHUB_TOKEN and GITHUB_REPO:
+        push_excel_to_github()
 
 
 def read_items_from_ws(ws) -> list[dict]:
@@ -581,7 +581,19 @@ def check_auth_password(payload: AuthCheckInput):
 def get_all_data(pull: bool = False):
     with excel_lock:
         if pull and GITHUB_TOKEN:
-            pull_excel_from_github()
+            # Solo traer de GitHub si el archivo local no existe o está vacío
+            if not EXCEL_FILE.exists():
+                pull_excel_from_github()
+            else:
+                try:
+                    wb_chk = openpyxl.load_workbook(EXCEL_FILE)
+                    ws_chk = wb_chk["Requerimientos"] if "Requerimientos" in wb_chk.sheetnames else None
+                    local_cnt = sum(1 for r in ws_chk.iter_rows(min_row=2, values_only=True) if any(r)) if ws_chk else 0
+                    wb_chk.close()
+                    if local_cnt == 0:
+                        pull_excel_from_github()
+                except Exception:
+                    pull_excel_from_github()
         ensure_excel_exists()
         wb = openpyxl.load_workbook(EXCEL_FILE)
         ws = wb["Requerimientos"]
@@ -626,6 +638,7 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
         ws = wb["Requerimientos"]
         items = read_items_from_ws(ws)
 
+        existing_ids = {str(it.get("ID_Req") or "").strip() for it in items}
         max_num = 0
         for it in items:
             val = str(it.get("ID_Req") or "")
@@ -636,7 +649,11 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
                         max_num = num
                 except ValueError:
                     pass
-        new_id = f"ING-{max_num + 1:03d}"
+        next_n = max_num + 1
+        new_id = f"ING-{next_n:03d}"
+        while new_id in existing_ids:
+            next_n += 1
+            new_id = f"ING-{next_n:03d}"
         fecha_reg = (payload.Fecha_Registro or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
         fecha_sol = (payload.Fecha_Solicitud or fecha_reg).strip()[:10]
 
