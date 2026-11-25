@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="graphite">
+<html lang="es" data-theme="paper">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingeniería · Centro de Control, Cronograma y Entregas Reales</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2323272E'/><path d='M26 68V46M50 68V30M74 68V52' stroke='%234E9F78' stroke-width='10' stroke-linecap='round'/></svg>">
+  <title>Control de Ingeniería · Entregas y Cronograma</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M26 68V46M50 68V30M74 68V52' stroke='%23FFFFFF' stroke-width='10' stroke-linecap='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -13,217 +13,312 @@
 </head>
 <body class="is-locked">
 
-  <!-- TOP COMMAND HEADER -->
+  <!-- TOP COMMAND HEADER (SIMPLIFICADA: MÁX. 3 ACCIONES) -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="workspace-id">
         <div class="workspace-mark">ING</div>
         <div>
-          <div class="workspace-title">Centro de Control · Procedimientos y Entregas Reales</div>
-        </div>
-        <div class="sync-pill" id="syncPill">
-          <span class="sync-dot" id="syncDot"></span>
-          <span id="syncText">Sincronizado con Excel</span>
-          <button class="sync-refresh" title="Releer archivo Excel desde la nube o disco" onclick="loadData(true)">↻</button>
+          <div class="workspace-title">Control de Ingeniería</div>
+          <div class="sync-pill" id="syncPill">
+            <span class="sync-dot" id="syncDot"></span>
+            <span id="syncText">Cargando datos...</span>
+            <button class="sync-refresh" type="button" title="Recargar datos" aria-label="Recargar datos" onclick="loadData(true)">↻</button>
+          </div>
         </div>
       </div>
 
+      <!-- NAVEGACIÓN PRINCIPAL EN ESCRITORIO (3 VISTAS CLARAS) -->
+      <nav class="main-nav" aria-label="Secciones principales">
+        <button type="button" class="nav-tab active" data-tab="resumen" onclick="setMainTab('resumen')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span>Resumen</span>
+        </button>
+        <button type="button" class="nav-tab" data-tab="entregables" onclick="setMainTab('entregables')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Entregables</span>
+          <span class="nav-badge tabular" id="navCountBadge">0</span>
+        </button>
+        <button type="button" class="nav-tab" data-tab="cronograma" onclick="setMainTab('cronograma')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h4M12 18h5"/></svg>
+          <span>Cronograma</span>
+        </button>
+      </nav>
+
       <div class="topbar-actions">
-        <button class="btn btn-ghost" id="simToggleBtn" onclick="toggleSimulator()">Simulador Capacidad</button>
-        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Modo Claro</button>
-        <span class="topbar-divider" aria-hidden="true"></span>
-        <button class="btn btn-ghost" onclick="copyExecutiveReport()">Copiar Reporte</button>
-        <a class="btn btn-secondary" href="/api/export" target="_blank">Exportar .xlsx</a>
-        <span class="topbar-divider" aria-hidden="true"></span>
-        <button class="btn btn-lock-locked" id="lockBtn" onclick="toggleAdminLock()">Solo Lectura · Desbloquear</button>
-        <button class="btn btn-primary" id="newProcBtn" style="display:none;" onclick="openDrawer()">+ Nuevo</button>
+        <button type="button" class="btn btn-lock-locked" id="lockBtn" onclick="toggleAdminLock()">Solo Lectura · Activar Edición</button>
+        <button type="button" class="btn btn-primary" id="newProcBtn" onclick="openDrawer()">+ Nuevo</button>
+
+        <div class="more-menu-wrap">
+          <button type="button" class="btn btn-secondary" id="moreMenuBtn" aria-haspopup="true" aria-expanded="false" onclick="toggleMoreMenu(event)">
+            ⋯ Más
+          </button>
+          <div class="dropdown-menu" id="moreMenuDropdown" role="menu">
+            <button type="button" class="dropdown-item" role="menuitem" onclick="copyExecutiveReport(); closeMoreMenu();">
+              <span>Copiar reporte ejecutivo</span>
+            </button>
+            <a class="dropdown-item" role="menuitem" href="/api/export" target="_blank" onclick="closeMoreMenu()">
+              <span>Descargar Excel (.xlsx)</span>
+            </a>
+            <button type="button" class="dropdown-item" role="menuitem" onclick="loadData(true); closeMoreMenu();">
+              <span>Recargar desde servidor</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button type="button" class="dropdown-item" role="menuitem" id="themeBtn" onclick="toggleTheme(); closeMoreMenu();">
+              <span>Cambiar a Modo Oscuro</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <!-- 1. PORTAFOLIO DE PROYECTOS CON FECHA REAL ESTIMADA -->
-    <section>
-      <div class="section-label-row">
-        <span class="section-eyebrow">Avance Ponderado y Entrega Real Estimada (Clic para filtrar)</span>
-        <span class="section-eyebrow tabular" id="globalSummaryTag">Calendario Colombia · Festivos excluidos · 8h/día</span>
+    <!-- BANNER DISCRETO DE ORIENTACIÓN EN MODO SOLO LECTURA -->
+    <div class="readonly-banner" id="readonlyBanner">
+      <div class="readonly-banner-text">
+        <strong>Modo consulta activo:</strong> puedes revisar avances, fechas y descargar reportes. Para editar o crear procedimientos, activa el modo edición.
       </div>
-      <div class="projects-strip" id="projectsStrip"></div>
-    </section>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAdminLock()">Activar edición</button>
+    </div>
 
-    <!-- 2. SIMULADOR INTERACTIVO "¿QUÉ PASA SI...?" -->
-    <section class="simulator-bar" id="simulatorBar">
-      <div class="sim-controls">
-        <div class="sim-group">
-          <span>Simular jornada diaria:</span>
-          <div class="segmented">
-            <button class="seg-btn" data-simh="6" onclick="setSimHours(6)">6h/día</button>
-            <button class="seg-btn active" data-simh="8" onclick="setSimHours(8)">8h/día (Normal)</button>
-            <button class="seg-btn" data-simh="10" onclick="setSimHours(10)">10h/día (Extra)</button>
-          </div>
-        </div>
-        <div class="sim-group">
-          <span>Apoyo adicional:</span>
-          <div class="segmented">
-            <button class="seg-btn active" data-simcap="1" onclick="setSimCapacity(1)">1x Equipo actual</button>
-            <button class="seg-btn" data-simcap="1.5" onclick="setSimCapacity(1.5)">1.5x (+Apoyo medio)</button>
-            <button class="seg-btn" data-simcap="2" onclick="setSimCapacity(2)">2x (+1 Ingeniero)</button>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="pill-tag tag-steel" id="simStatusLabel">Modo real (8h/día · 1x)</span>
-        <button class="btn btn-ghost" style="height:28px; font-size:0.74rem;" onclick="resetSimulator()">Restaurar</button>
-      </div>
-    </section>
+    <!-- ========================================================================
+         PESTAÑA 1: RESUMEN EJECUTIVO (GERENCIA Y VISTA RÁPIDA)
+         ======================================================================== -->
+    <section class="tab-panel active" id="panelResumen" data-panel="resumen">
+      <!-- KPIs PRINCIPALES -->
+      <div class="kpi-grid" id="kpiGrid"></div>
 
-    <!-- 3. BARRA DE FILTROS CONTEXTUALES -->
-    <section class="filter-toolbar">
-      <div class="filter-controls">
-        <div class="search-wrap">
-          <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, fecha o ID..." oninput="applyFilters()" />
-          <kbd class="kbd-hint" aria-hidden="true">/</kbd>
-        </div>
-
-        <select id="fResponsable" class="select-clean" onchange="applyFilters()">
-          <option value="TODOS">Responsable: Todos</option>
-        </select>
-
-        <select id="fSolicitante" class="select-clean" onchange="applyFilters()">
-          <option value="TODOS">Solicitante: Todos</option>
-        </select>
-
-        <select id="fPrioridad" class="select-clean" onchange="applyFilters()">
-          <option value="TODOS">Prioridad: Todas</option>
-          <option value="1 - Urgente">1 - Urgente</option>
-          <option value="2 - Alta">2 - Alta</option>
-          <option value="3 - Normal">3 - Normal</option>
-          <option value="4 - Baja">4 - Baja</option>
-        </select>
-
-        <select id="fEstado" class="select-clean" onchange="applyFilters()">
-          <option value="TODOS">Estado: Todos</option>
-          <option value="Pendiente">Pendiente</option>
-          <option value="En Desarrollo">En Desarrollo</option>
-          <option value="Pausado">Pausado</option>
-          <option value="Terminado">Terminado</option>
-        </select>
-
-        <div class="segmented" role="group" aria-label="Filtro de alcance">
-          <button class="seg-btn active" data-scope="TODOS" onclick="setScopeFilter('TODOS')">Todos</button>
-          <button class="seg-btn" data-scope="No" onclick="setScopeFilter('No')">Plan Base</button>
-          <button class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios</button>
-        </div>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button class="btn btn-ghost" id="toggleChartsBtn" onclick="toggleCharts()">Ocultar Gráficas</button>
-        <button class="btn btn-ghost btn-reset-active" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
-      </div>
-    </section>
-
-    <!-- 4. ANALÍTICA VISUAL -->
-    <section class="analytics-grid" id="analyticsGrid">
-      <article class="card">
-        <div class="card-head">
+      <!-- PORTAFOLIO DE PROYECTOS -->
+      <section class="section-block">
+        <div class="section-label-row">
           <div>
-            <h3 class="card-title">Horas Planeadas, Cambios, Ejecución Real y Demoras Externas</h3>
-            <p class="card-desc">Comparativo visual del esfuerzo técnico y bloqueos externos</p>
+            <h2 class="section-heading">Avance por Proyecto</h2>
+            <p class="section-sub">Haz clic en un proyecto para ver sus entregables detallados</p>
           </div>
-          <div class="segmented">
-            <button class="seg-btn active" id="btnAxisProy" onclick="setBarAxis('Proyecto')">Por Proyecto</button>
-            <button class="seg-btn" id="btnAxisFase" onclick="setBarAxis('Fase_Etapa')">Por Fase</button>
-          </div>
+          <span class="section-eyebrow tabular" id="globalSummaryTag">Calendario Colombia · Festivos excluidos · 8h/día</span>
         </div>
-        <div id="chartHours" class="chart-box"></div>
-      </article>
+        <div class="projects-strip" id="projectsStrip"></div>
+      </section>
 
-      <article class="card">
-        <div class="card-head">
-          <div>
-            <h3 class="card-title">Distribución de Carga (Horas Estimadas)</h3>
-            <p class="card-desc">Clic en un segmento para filtrar el tablero</p>
+      <!-- ANALÍTICA VISUAL -->
+      <section class="analytics-grid" id="analyticsGrid">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Horas Planeadas, Cambios, Ejecución Real y Demoras</h3>
+              <p class="card-desc">Comparativo visual del esfuerzo técnico y bloqueos externos</p>
+            </div>
+            <div class="segmented">
+              <button type="button" class="seg-btn active" id="btnAxisProy" onclick="setBarAxis('Proyecto')">Por Proyecto</button>
+              <button type="button" class="seg-btn" id="btnAxisFase" onclick="setBarAxis('Fase_Etapa')">Por Fase</button>
+            </div>
           </div>
-          <div class="segmented">
-            <button class="seg-btn active" id="btnDonutEmp" onclick="setDonutAxis('Responsable')">Empleado</button>
-            <button class="seg-btn" id="btnDonutSol" onclick="setDonutAxis('Solicitante')">Solicitante</button>
+          <div id="chartHours" class="chart-box"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Distribución de Carga (Horas Estimadas)</h3>
+              <p class="card-desc">Clic en un segmento para filtrar los entregables</p>
+            </div>
+            <div class="segmented">
+              <button type="button" class="seg-btn active" id="btnDonutEmp" onclick="setDonutAxis('Responsable')">Empleado</button>
+              <button type="button" class="seg-btn" id="btnDonutSol" onclick="setDonutAxis('Solicitante')">Solicitante</button>
+            </div>
           </div>
-        </div>
-        <div id="chartDistribution" class="chart-box"></div>
-      </article>
+          <div id="chartDistribution" class="chart-box"></div>
+        </article>
+      </section>
     </section>
 
-    <!-- 5. MESA DE TRABAJO MULTI-VISTA (CERO SCROLL HORIZONTAL) -->
-    <section class="workbench-card">
-      <div class="workbench-header">
-        <div>
-          <h3 class="card-title">Cronograma Dinámico de Entregables</h3>
-          <p class="card-desc" id="workbenchSubtitle">Vista de consulta en tiempo real · Desbloquea con clave para editar o sumar ediciones rápidas</p>
+    <!-- ========================================================================
+         PESTAÑA 2: ENTREGABLES (OPERACIÓN DIARIA: LISTA Y KANBAN)
+         ======================================================================== -->
+    <section class="tab-panel" id="panelEntregables" data-panel="entregables">
+      <!-- BARRA DE FILTROS SIMPLIFICADA + PANEL DESPLEGABLE "MÁS FILTROS" -->
+      <section class="filter-toolbar">
+        <div class="filter-primary-row">
+          <div class="search-wrap">
+            <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, proyecto, fecha o ID..." oninput="applyFilters()" />
+            <kbd class="kbd-hint" aria-hidden="true">/</kbd>
+          </div>
+
+          <select id="fProyectoSelect" class="select-clean" aria-label="Filtrar por proyecto" onchange="onProjectSelectChange(this.value)">
+            <option value="TODOS">Proyecto: Todos</option>
+          </select>
+
+          <select id="fEstado" class="select-clean" aria-label="Filtrar por estado" onchange="applyFilters()">
+            <option value="TODOS">Estado: Todos</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Desarrollo">En Desarrollo</option>
+            <option value="Pausado">Pausado</option>
+            <option value="Terminado">Terminado</option>
+          </select>
+
+          <button type="button" class="btn btn-secondary" id="moreFiltersBtn" onclick="toggleMoreFilters()">
+            Más filtros
+          </button>
+
+          <button type="button" class="btn btn-ghost btn-reset-active" id="resetBtn" style="display:none;" onclick="resetFilters()">
+            Limpiar filtros
+          </button>
         </div>
 
-        <div class="workbench-right">
-          <div class="summary-strip" id="tableSummaryStrip"></div>
+        <!-- FILTROS SECUNDARIOS COLAPSABLES (DIVULGACIÓN PROGRESIVA) -->
+        <div class="advanced-filters" id="advancedFiltersPanel">
+          <select id="fResponsable" class="select-clean" aria-label="Filtrar por responsable" onchange="applyFilters()">
+            <option value="TODOS">Responsable: Todos</option>
+          </select>
 
-          <div class="segmented" role="group" aria-label="Modo de vista">
-            <button class="seg-btn active" id="viewBtnList" onclick="setViewMode('list')">Lista</button>
-            <button class="seg-btn" id="viewBtnGantt" onclick="setViewMode('gantt')">Cronograma (Gantt)</button>
-            <button class="seg-btn" id="viewBtnKanban" onclick="setViewMode('kanban')">Tablero Kanban</button>
+          <select id="fSolicitante" class="select-clean" aria-label="Filtrar por solicitante" onchange="applyFilters()">
+            <option value="TODOS">Solicitante: Todos</option>
+          </select>
+
+          <select id="fPrioridad" class="select-clean" aria-label="Filtrar por prioridad" onchange="applyFilters()">
+            <option value="TODOS">Prioridad: Todas</option>
+            <option value="1 - Urgente">1 - Urgente</option>
+            <option value="2 - Alta">2 - Alta</option>
+            <option value="3 - Normal">3 - Normal</option>
+            <option value="4 - Baja">4 - Baja</option>
+          </select>
+
+          <div class="segmented" role="group" aria-label="Filtro de alcance">
+            <button type="button" class="seg-btn active" data-scope="TODOS" onclick="setScopeFilter('TODOS')">Todos</button>
+            <button type="button" class="seg-btn" data-scope="No" onclick="setScopeFilter('No')">Plan Base</button>
+            <button type="button" class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios</button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- VISTA 1: LISTA COMPACTA SIN SCROLL HORIZONTAL -->
-      <div class="table-wrap" id="listViewContainer">
-        <table>
-          <colgroup>
-            <col class="col-id" />
-            <col class="col-desc" />
-            <col class="col-state" />
-            <col class="col-prog" />
-            <col class="col-date" />
-            <col class="col-actions" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>ID · Proyecto · Solicitud</th>
-              <th>Procedimiento y Acumulado</th>
-              <th>Prioridad y Estado</th>
-              <th>Avance %</th>
-              <th>Entrega Real y Horas</th>
-              <th class="actions-col-cell">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
+      <!-- MESA DE TRABAJO: LISTA / KANBAN -->
+      <section class="workbench-card">
+        <div class="workbench-header">
+          <div>
+            <h2 class="card-title">Listado de Entregables</h2>
+            <p class="card-desc" id="workbenchSubtitle">Vista de consulta en tiempo real</p>
+          </div>
 
-      <!-- VISTA 2: LÍNEA DE TIEMPO / MINI-GANTT -->
-      <div class="gantt-container" id="ganttViewContainer"></div>
+          <div class="workbench-right">
+            <div class="summary-strip" id="tableSummaryStrip"></div>
 
-      <!-- VISTA 3: TABLERO KANBAN -->
-      <div class="kanban-board" id="kanbanViewContainer"></div>
+            <div class="segmented" role="group" aria-label="Formato de vista">
+              <button type="button" class="seg-btn active" id="viewBtnList" onclick="setViewMode('list')">Lista</button>
+              <button type="button" class="seg-btn" id="viewBtnKanban" onclick="setViewMode('kanban')">Tablero Kanban</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA 1: LISTA EN PC / TARJETAS CON ETIQUETAS EN CELULAR -->
+        <div class="table-wrap" id="listViewContainer">
+          <table>
+            <colgroup>
+              <col class="col-id" />
+              <col class="col-desc" />
+              <col class="col-state" />
+              <col class="col-prog" />
+              <col class="col-date" />
+              <col class="col-actions" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Proyecto y Solicitud</th>
+                <th>Procedimiento</th>
+                <th>Prioridad y Estado</th>
+                <th>Avance %</th>
+                <th>Entrega Real y Horas</th>
+                <th class="actions-col-cell">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- VISTA 2: TABLERO KANBAN -->
+        <div class="kanban-board" id="kanbanViewContainer"></div>
+      </section>
+    </section>
+
+    <!-- ========================================================================
+         PESTAÑA 3: CRONOGRAMA Y SIMULADOR DE CAPACIDAD
+         ======================================================================== -->
+    <section class="tab-panel" id="panelCronograma" data-panel="cronograma">
+      <!-- SIMULADOR DE CAPACIDAD INTEGRADO -->
+      <section class="simulator-bar open" id="simulatorBar">
+        <div class="sim-controls">
+          <div class="sim-group">
+            <span><strong>Jornada diaria:</strong></span>
+            <div class="segmented">
+              <button type="button" class="seg-btn" data-simh="6" onclick="setSimHours(6)">6h/día</button>
+              <button type="button" class="seg-btn active" data-simh="8" onclick="setSimHours(8)">8h/día (Normal)</button>
+              <button type="button" class="seg-btn" data-simh="10" onclick="setSimHours(10)">10h/día (Extra)</button>
+            </div>
+          </div>
+          <div class="sim-group">
+            <span><strong>Capacidad del equipo:</strong></span>
+            <div class="segmented">
+              <button type="button" class="seg-btn active" data-simcap="1" onclick="setSimCapacity(1)">1x Actual</button>
+              <button type="button" class="seg-btn" data-simcap="1.5" onclick="setSimCapacity(1.5)">1.5x (+Apoyo)</button>
+              <button type="button" class="seg-btn" data-simcap="2" onclick="setSimCapacity(2)">2x (+1 Ing.)</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span class="pill-tag tag-steel" id="simStatusLabel">Modo real (8h/día · 1x)</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="resetSimulator()">Restaurar</button>
+        </div>
+      </section>
+
+      <!-- MINI-GANTT A PANTALLA COMPLETA -->
+      <section class="workbench-card">
+        <div class="workbench-header">
+          <div>
+            <h2 class="card-title">Línea de Tiempo de Entregas (Calendario Colombia)</h2>
+            <p class="card-desc">Visualiza esperas desde solicitud, ejecución de ingeniería, demoras externas y días festivos</p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setMainTab('entregables')">Ajustar filtros</button>
+        </div>
+        <div class="gantt-container active" id="ganttViewContainer"></div>
+      </section>
     </section>
   </main>
 
+  <!-- NAVEGACIÓN INFERIOR FIJA PARA CELULAR (ALCANCE DEL PULGAR) -->
+  <nav class="mobile-bottom-nav" aria-label="Navegación móvil">
+    <button type="button" class="mobile-nav-btn active" data-tab="resumen" onclick="setMainTab('resumen')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      <span>Resumen</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-tab="entregables" onclick="setMainTab('entregables')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Entregables</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-tab="cronograma" onclick="setMainTab('cronograma')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h4M12 18h5"/></svg>
+      <span>Cronograma</span>
+    </button>
+  </nav>
+
   <!-- MODAL 1: DESBLOQUEO DE EDICIÓN CON CLAVE -->
   <div class="modal-backdrop" id="authModal" onclick="if(event.target===this) closeAuthModal()">
-    <div class="modal-card" style="width:390px;">
+    <div class="modal-card" style="width:410px;">
       <div class="drawer-top">
-        <h2>Desbloquear Modo Edición</h2>
-        <button class="btn btn-ghost" onclick="closeAuthModal()">Cerrar</button>
+        <h2>Activar Modo Edición</h2>
+        <button type="button" class="btn btn-ghost" onclick="closeAuthModal()">Cerrar</button>
       </div>
       <form onsubmit="submitAuthModal(event)">
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
           <div class="field">
-            <label>Contraseña de Ingeniería</label>
-            <input type="password" id="adminPasswordInput" placeholder="Ingresa tu clave..." required autocomplete="current-password" />
+            <label for="adminPasswordInput">Contraseña de Ingeniería</label>
+            <input type="password" id="adminPasswordInput" placeholder="Ingresa la clave de edición..." required autocomplete="current-password" />
           </div>
           <div class="sync-hint">
-            Mientras esté bloqueado, cualquier área o gerencia puede consultar el tablero y exportar el Excel sin riesgo de modificar tus datos.
+            Mientras esté bloqueado, cualquier área o gerencia puede consultar avances y descargar el Excel sin riesgo de modificar datos.
           </div>
           <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button type="button" class="btn btn-ghost" onclick="closeAuthModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Desbloquear</button>
+            <button type="button" class="btn btn-secondary" onclick="closeAuthModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Activar Edición</button>
           </div>
         </div>
       </form>
@@ -234,20 +329,20 @@
   <div class="modal-backdrop" id="microModal" onclick="if(event.target===this) closeMicroModal()">
     <div class="modal-card">
       <div class="drawer-top">
-        <h2 id="microModalTitle">Sumar Ediciones y Tiempo Invertido</h2>
-        <button class="btn btn-ghost" onclick="closeMicroModal()">Cerrar</button>
+        <h2 id="microModalTitle">Sumar Ediciones y Tiempo</h2>
+        <button type="button" class="btn btn-ghost" onclick="closeMicroModal()">Cerrar</button>
       </div>
 
       <form id="microForm" onsubmit="submitMicroModal(event)">
         <input type="hidden" id="microIdReq" value="" />
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div class="field">
-              <label>Cantidad de ediciones a sumar</label>
-              <input type="number" id="microCountInput" min="0" step="1" value="1" required />
+              <label for="microCountInput">Cantidad de ediciones</label>
+              <input type="number" id="microCountInput" min="0" step="1" value="1" required oninput="updateMicroHoursPreview()" />
             </div>
             <div class="field">
-              <label>Tiempo invertido (Minutos)</label>
+              <label for="microMinutesInput">Tiempo invertido (Minutos)</label>
               <input type="number" id="microMinutesInput" min="0" step="1" value="15" required oninput="updateMicroHoursPreview()" />
             </div>
           </div>
@@ -261,17 +356,17 @@
           </div>
 
           <div class="field">
-            <label>Nota breve de lo ajustado (Opcional)</label>
-            <input type="text" id="microNoteInput" placeholder="Ej. Ajuste de texto en certificado, cambio de estado de orden..." />
+            <label for="microNoteInput">Nota breve de lo ajustado (Opcional)</label>
+            <input type="text" id="microNoteInput" placeholder="Ej. Ajuste de texto en certificado, cambio de estado..." />
           </div>
 
           <div class="sync-hint" id="microPreviewHint">
-            Se sumará <strong>+1 edición</strong> y <strong>+0,25 h</strong> (15 min) al acumulado real de este bloque.
+            Se sumará <strong>+1 edición</strong> y <strong>+0,25 h</strong> (15 min) al acumulado real.
           </div>
 
           <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
-            <button type="button" class="btn btn-ghost" onclick="closeMicroModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Sumar al Acumulado</button>
+            <button type="button" class="btn btn-secondary" onclick="closeMicroModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar acumulado</button>
           </div>
         </div>
       </form>
@@ -282,17 +377,17 @@
   <div class="modal-backdrop" id="delayModal" onclick="if(event.target===this) closeDelayModal()">
     <div class="modal-card">
       <div class="drawer-top">
-        <h2 id="delayModalTitle">Motivos Externos y Comentarios</h2>
-        <button class="btn btn-ghost" onclick="closeDelayModal()">Cerrar</button>
+        <h2 id="delayModalTitle">Demora Externa y Comentarios</h2>
+        <button type="button" class="btn btn-ghost" onclick="closeDelayModal()">Cerrar</button>
       </div>
 
       <form id="delayForm" onsubmit="submitDelayModal(event)">
         <input type="hidden" id="delayIdReq" value="" />
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
           <div class="field">
-            <label>Tiempo adicional por motivos externos (Horas hábiles)</label>
+            <label for="delayHoursInput">Tiempo adicional por motivos externos (Horas hábiles)</label>
             <input type="number" id="delayHoursInput" min="0" step="1" value="0" required />
-            <div class="chip-row" style="margin-top:4px;">
+            <div class="chip-row" style="margin-top:6px;">
               <button type="button" class="preset-chip" onclick="setDelayHours(0)">0h (Sin demora)</button>
               <button type="button" class="preset-chip" onclick="addDelayHours(4)">+4h (½ día)</button>
               <button type="button" class="preset-chip" onclick="addDelayHours(8)">+8h (1 día)</button>
@@ -302,163 +397,186 @@
           </div>
 
           <div class="field">
-            <label>Comentarios / Justificación del motivo externo</label>
-            <textarea id="delayCommentInput" placeholder="Ej. Esperando aprobación de calidad/cliente, validación SMTP con proveedor externo..."></textarea>
+            <label for="delayCommentInput">Justificación / Comentarios</label>
+            <textarea id="delayCommentInput" placeholder="Ej. Esperando aprobación de calidad o respuesta del cliente..."></textarea>
           </div>
 
           <div class="sync-hint">
-            Estas horas se suman sobre la fecha tentativa de ingeniería respetando fines de semana y festivos oficiales de Colombia para calcular la <strong>Fecha Real de Entrega</strong>.
+            Estas horas se suman sobre la fecha tentativa respetando fines de semana y festivos de Colombia para calcular la <strong>Fecha Real de Entrega</strong>.
           </div>
 
           <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
-            <button type="button" class="btn btn-ghost" onclick="closeDelayModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar Demora y Recalcular</button>
+            <button type="button" class="btn btn-secondary" onclick="closeDelayModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar y Recalcular</button>
           </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- SLIDE-OVER DRAWER PARA CREAR / EDITAR PROCEDIMIENTO COMPLETO -->
+  <!-- SLIDE-OVER DRAWER PARA CREAR / EDITAR PROCEDIMIENTO (3 BLOQUES + PIE FIJO) -->
   <aside class="drawer-overlay" id="drawerOverlay" onclick="if(event.target===this) closeDrawer()">
     <div class="drawer-panel">
       <div class="drawer-top">
         <h2 id="drawerTitle">Nuevo Procedimiento</h2>
-        <button class="btn btn-ghost" onclick="closeDrawer()">Cerrar</button>
+        <button type="button" class="btn btn-ghost" onclick="closeDrawer()">Cerrar</button>
       </div>
 
-      <form id="procForm" onsubmit="submitDrawerForm(event)">
+      <form id="procForm" class="drawer-form" onsubmit="submitDrawerForm(event)">
         <input type="hidden" id="editIdReq" value="" />
-        <div class="form-grid">
-          <div class="field">
-            <label>Proyecto *</label>
-            <input type="text" id="inpProyecto" list="dlProyectos" required placeholder="Ej. T-LAB" />
-            <datalist id="dlProyectos"></datalist>
-          </div>
 
-          <div class="field">
-            <label>Fase / Etapa *</label>
-            <input type="text" id="inpFase" required placeholder="Ej. Soporte / Ediciones" />
-          </div>
+        <div class="drawer-body">
+          <!-- BLOQUE 1: DATOS PRINCIPALES -->
+          <fieldset class="form-section">
+            <legend class="form-section-title">1. ¿Qué se pidió?</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="inpProyecto">Proyecto *</label>
+                <input type="text" id="inpProyecto" list="dlProyectos" required placeholder="Ej. T-LAB" />
+                <datalist id="dlProyectos"></datalist>
+              </div>
 
-          <div class="field">
-            <label>Quién Solicita (Área) *</label>
-            <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Calidad / Comercial" />
-            <datalist id="dlSolicitantes"></datalist>
-          </div>
+              <div class="field">
+                <label for="inpFase">Fase / Etapa *</label>
+                <input type="text" id="inpFase" required placeholder="Ej. Etapa 1 / Soporte" />
+              </div>
 
-          <div class="field">
-            <label>Empleado Responsable *</label>
-            <input type="text" id="inpResponsable" list="dlResponsables" required placeholder="Ej. Samantha Moreno" />
-            <datalist id="dlResponsables"></datalist>
-          </div>
+              <div class="field span-2">
+                <label for="inpDescripcion">Nombre del Procedimiento *</label>
+                <input type="text" id="inpDescripcion" required placeholder="Ej. Validaciones del software" />
+              </div>
 
-          <div class="field">
-            <label>Fecha en que se pidió (Solicitud) *</label>
-            <input type="date" id="inpFechaSolicitud" required />
-          </div>
+              <div class="field span-2">
+                <label for="inpDetalle">Detalle Explicativo</label>
+                <textarea id="inpDetalle" placeholder="Explica brevemente qué se entrega..."></textarea>
+              </div>
 
-          <div class="field">
-            <label>Fecha de registro en sistema</label>
-            <input type="date" id="inpFechaRegistro" />
-          </div>
+              <div class="field">
+                <label for="inpSolicitante">Área Solicitante *</label>
+                <input type="text" id="inpSolicitante" list="dlSolicitantes" required placeholder="Ej. Calidad" />
+                <datalist id="dlSolicitantes"></datalist>
+              </div>
 
-          <div class="field span-2">
-            <label>Descripción Técnica del Procedimiento *</label>
-            <input type="text" id="inpDescripcion" required placeholder="Ej. Bolsa de ediciones menores y ajustes rápidos solicitados" />
-          </div>
+              <div class="field">
+                <label for="inpResponsable">Responsable *</label>
+                <input type="text" id="inpResponsable" list="dlResponsables" required placeholder="Ej. Samantha Moreno" />
+                <datalist id="dlResponsables"></datalist>
+              </div>
 
-          <div class="field span-2">
-            <label>Detalle Explicativo</label>
-            <textarea id="inpDetalle" placeholder="Explica qué entrega este procedimiento o bolsa de ajustes..."></textarea>
-          </div>
+              <div class="field span-2">
+                <label for="inpFechaSolicitud">Fecha en que se pidió *</label>
+                <input type="date" id="inpFechaSolicitud" required />
+              </div>
+            </div>
+          </fieldset>
 
-          <div class="field">
-            <label>Cantidad de Ediciones Acumuladas</label>
-            <input type="number" id="inpCantEdiciones" min="0" step="1" value="0" />
-          </div>
+          <!-- BLOQUE 2: PLANIFICACIÓN Y AVANCE -->
+          <fieldset class="form-section">
+            <legend class="form-section-title">2. Planificación y Avance</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="inpPrioridad">Prioridad *</label>
+                <select id="inpPrioridad">
+                  <option value="1 - Urgente">1 - Urgente (Primero)</option>
+                  <option value="2 - Alta">2 - Alta</option>
+                  <option value="3 - Normal" selected>3 - Normal</option>
+                  <option value="4 - Baja">4 - Baja</option>
+                </select>
+              </div>
 
-          <div class="field">
-            <label>Prioridad en Cola *</label>
-            <select id="inpPrioridad">
-              <option value="1 - Urgente">1 - Urgente (Pasa primero)</option>
-              <option value="2 - Alta">2 - Alta</option>
-              <option value="3 - Normal" selected>3 - Normal</option>
-              <option value="4 - Baja">4 - Baja</option>
-            </select>
-          </div>
+              <div class="field">
+                <label for="inpTipo">Tipo de trabajo</label>
+                <select id="inpTipo">
+                  <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
+                  <option value="Mejora">Mejora</option>
+                  <option value="Corrección">Corrección</option>
+                  <option value="Soporte">Soporte</option>
+                </select>
+              </div>
 
-          <div class="field">
-            <label>¿Alteró el tiempo inicial?</label>
-            <select id="inpAdicional">
-              <option value="No">No (Plan Original)</option>
-              <option value="Sí">Sí (Requerimiento Nuevo Extra)</option>
-            </select>
-          </div>
+              <div class="field">
+                <label for="inpHorasEst">Horas Estimadas *</label>
+                <input type="number" id="inpHorasEst" min="0" step="0.05" required value="8" />
+              </div>
 
-          <div class="field">
-            <label>Tipo</label>
-            <select id="inpTipo">
-              <option value="Funcionalidad Nueva">Funcionalidad Nueva</option>
-              <option value="Mejora">Mejora</option>
-              <option value="Corrección">Corrección</option>
-              <option value="Soporte">Soporte</option>
-            </select>
-          </div>
+              <div class="field">
+                <label for="inpHorasReales">Horas Reales Invertidas</label>
+                <input type="number" id="inpHorasReales" min="0" step="0.05" required value="0" />
+              </div>
 
-          <div class="field">
-            <label>Horas Estimadas *</label>
-            <input type="number" id="inpHorasEst" min="0" step="0.05" required value="8" />
-          </div>
+              <div class="field">
+                <label for="inpEstado">Estado</label>
+                <select id="inpEstado" onchange="onDrawerEstadoChange()">
+                  <option value="Pendiente">Pendiente (0%)</option>
+                  <option value="En Desarrollo">En Desarrollo (50%)</option>
+                  <option value="Pausado">Pausado</option>
+                  <option value="Terminado">Terminado (100%)</option>
+                </select>
+              </div>
 
-          <div class="field">
-            <label>Horas Reales Invertidas</label>
-            <input type="number" id="inpHorasReales" min="0" step="0.05" required value="0" />
-          </div>
+              <div class="field">
+                <label for="inpAvance">% Avance (0 a 100%)</label>
+                <input type="number" id="inpAvance" min="0" max="100" step="1" required value="0" oninput="onDrawerAvanceChange()" />
+              </div>
 
-          <div class="field">
-            <label>Estado del Procedimiento</label>
-            <select id="inpEstado" onchange="onDrawerEstadoChange()">
-              <option value="Pendiente">Pendiente (0%)</option>
-              <option value="En Desarrollo">En Desarrollo (50%)</option>
-              <option value="Pausado">Pausado</option>
-              <option value="Terminado">Terminado (100%)</option>
-            </select>
-          </div>
+              <div class="field span-2">
+                <label for="inpAdicional">¿Alteró el alcance inicial?</label>
+                <select id="inpAdicional">
+                  <option value="No">No (Plan Original)</option>
+                  <option value="Sí">Sí (Requerimiento Adicional)</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
 
-          <div class="field">
-            <label>% Avance (0 a 100%)</label>
-            <input type="number" id="inpAvance" min="0" max="100" step="1" required value="0" oninput="onDrawerAvanceChange()" />
-          </div>
+          <!-- BLOQUE 3: SEGUIMIENTO Y DEMORAS (COLAPSABLE PARA BAJAR CARGA COGNITIVA) -->
+          <details class="form-details" id="drawerAdvancedDetails">
+            <summary class="form-details-summary">
+              <span>3. Seguimiento, ediciones y demoras externas (Opcional)</span>
+              <span class="details-chevron" aria-hidden="true">▾</span>
+            </summary>
+            <div class="form-grid" style="margin-top:14px;">
+              <div class="field">
+                <label for="inpCantEdiciones">Ediciones Acumuladas</label>
+                <input type="number" id="inpCantEdiciones" min="0" step="1" value="0" />
+              </div>
 
-          <div class="field">
-            <label>Horas Demora Externa</label>
-            <input type="number" id="inpHorasExt" min="0" step="1" value="0" />
-          </div>
+              <div class="field">
+                <label for="inpHorasExt">Horas Demora Externa</label>
+                <input type="number" id="inpHorasExt" min="0" step="1" value="0" />
+              </div>
 
-          <div class="field">
-            <label>Aprobación</label>
-            <select id="inpAprobado">
-              <option value="Aprobado">Aprobado</option>
-              <option value="Pendiente">Pendiente de Aprobación</option>
-            </select>
-          </div>
+              <div class="field">
+                <label for="inpAprobado">Aprobación</label>
+                <select id="inpAprobado">
+                  <option value="Aprobado">Aprobado</option>
+                  <option value="Pendiente">Pendiente de Aprobación</option>
+                </select>
+              </div>
 
-          <div class="field span-2">
-            <label>Comentarios por Motivos Externos</label>
-            <textarea id="inpComentariosExt" placeholder="Notas sobre dependencias externas, aprobaciones pendientes o bloqueos..."></textarea>
-          </div>
+              <div class="field">
+                <label for="inpFechaRegistro">Fecha de registro</label>
+                <input type="date" id="inpFechaRegistro" />
+              </div>
+
+              <div class="field span-2">
+                <label for="inpComentariosExt">Comentarios por Motivos Externos</label>
+                <textarea id="inpComentariosExt" placeholder="Notas sobre aprobaciones pendientes o dependencias externas..."></textarea>
+              </div>
+            </div>
+          </details>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-          <button type="button" class="btn btn-ghost" onclick="closeDrawer()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar y Recalcular Fechas</button>
+        <!-- PIE FIJO SIEMPRE VISIBLE -->
+        <div class="drawer-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDrawer()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </div>
       </form>
     </div>
   </aside>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="static/app.js"></script>
 </body>

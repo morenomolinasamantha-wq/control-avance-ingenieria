@@ -23,6 +23,7 @@ let selectedScope = "TODOS";
 let barAxis = "Proyecto";
 let donutAxis = "Responsable";
 let viewMode = "list";
+let activeMainTab = "resumen";
 let isBackendConnected = false;
 let chartHours = null;
 let chartDistribution = null;
@@ -44,26 +45,83 @@ function escapeJsArg(value) {
 }
 
 /* ==========================================================================
+   NAVEGACIÓN DE 3 PESTAÑAS, MENÚ "MÁS" Y PANEL "MÁS FILTROS"
+   ========================================================================== */
+function setMainTab(tab) {
+  activeMainTab = tab;
+  document.querySelectorAll(".tab-panel").forEach(p => {
+    p.classList.toggle("active", p.getAttribute("data-panel") === tab);
+  });
+  document.querySelectorAll(".nav-tab, .mobile-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
+  });
+  if (tab === "resumen") {
+    setTimeout(() => {
+      renderCharts();
+      if (chartHours) chartHours.resize();
+      if (chartDistribution) chartDistribution.resize();
+    }, 30);
+  } else if (tab === "entregables") {
+    renderActiveView();
+  } else if (tab === "cronograma") {
+    renderGantt();
+  }
+}
+
+function toggleMoreMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById("moreMenuDropdown");
+  const btn = document.getElementById("moreMenuBtn");
+  if (!menu) return;
+  const open = menu.classList.toggle("open");
+  if (btn) btn.setAttribute("aria-expanded", String(open));
+}
+
+function closeMoreMenu() {
+  const menu = document.getElementById("moreMenuDropdown");
+  const btn = document.getElementById("moreMenuBtn");
+  if (menu) menu.classList.remove("open");
+  if (btn) btn.setAttribute("aria-expanded", "false");
+}
+
+function toggleMoreFilters() {
+  const panel = document.getElementById("advancedFiltersPanel");
+  if (!panel) return;
+  panel.classList.toggle("open");
+  updateMoreFiltersButton();
+}
+
+function updateMoreFiltersButton() {
+  const btn = document.getElementById("moreFiltersBtn");
+  const panel = document.getElementById("advancedFiltersPanel");
+  if (!btn) return;
+  let activeCount = 0;
+  if (document.getElementById("fResponsable").value !== "TODOS") activeCount++;
+  if (document.getElementById("fSolicitante").value !== "TODOS") activeCount++;
+  if (document.getElementById("fPrioridad").value !== "TODOS") activeCount++;
+  if (selectedScope !== "TODOS") activeCount++;
+  const isOpen = panel && panel.classList.contains("open");
+  btn.textContent = activeCount > 0 ? `Más filtros (${activeCount})` : (isOpen ? "Ocultar filtros" : "Más filtros");
+}
+
+/* ==========================================================================
    CONTROL DE ACCESO (SOLO LECTURA vs EDICIÓN CON CLAVE)
    ========================================================================== */
 function updateLockUI() {
   const body = document.body;
   const btn = document.getElementById("lockBtn");
-  const newBtn = document.getElementById("newProcBtn");
   const sub = document.getElementById("workbenchSubtitle");
 
   if (isUnlocked) {
     body.classList.remove("is-locked");
     btn.className = "btn btn-lock-unlocked";
-    btn.textContent = "Edición Activa · Bloquear";
-    newBtn.style.display = "inline-flex";
-    sub.textContent = "Modo edición activo · Todos los cambios se guardan en tiempo real";
+    btn.textContent = "Editando · Bloquear";
+    if (sub) sub.textContent = "Modo edición activo · Los cambios se guardan en tiempo real";
   } else {
     body.classList.add("is-locked");
     btn.className = "btn btn-lock-locked";
-    btn.textContent = "Solo Lectura · Desbloquear";
-    newBtn.style.display = "none";
-    sub.textContent = "Vista de consulta en tiempo real · Desbloquea con clave para editar o sumar ediciones";
+    btn.textContent = "Solo Lectura · Activar Edición";
+    if (sub) sub.textContent = "Vista de consulta · Activa la edición para modificar avances o crear procedimientos";
   }
   renderActiveView();
 }
@@ -349,9 +407,7 @@ function computeLocalCascade(items) {
    ========================================================================== */
 function toggleSimulator() {
   const bar = document.getElementById("simulatorBar");
-  const btn = document.getElementById("simToggleBtn");
-  const isOpen = bar.classList.toggle("open");
-  btn.classList.toggle("active-toggle", isOpen);
+  if (bar) bar.classList.toggle("open");
 }
 
 function setSimHours(h) {
@@ -416,22 +472,16 @@ function toggleTheme() {
   const next = root.getAttribute("data-theme") === "graphite" ? "paper" : "graphite";
   root.setAttribute("data-theme", next);
   localStorage.setItem("ing_bi_theme", next);
-  document.getElementById("themeBtn").textContent = next === "graphite" ? "Modo Claro" : "Modo Oscuro";
+  const themeBtn = document.getElementById("themeBtn");
+  if (themeBtn) themeBtn.textContent = next === "graphite" ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro";
   renderCharts();
 }
 
 function initTheme() {
-  const saved = localStorage.getItem("ing_bi_theme") || "graphite";
+  const saved = localStorage.getItem("ing_bi_theme") || "paper";
   document.documentElement.setAttribute("data-theme", saved);
-  document.getElementById("themeBtn").textContent = saved === "graphite" ? "Modo Claro" : "Modo Oscuro";
-}
-
-function toggleCharts() {
-  const grid = document.getElementById("analyticsGrid");
-  const btn = document.getElementById("toggleChartsBtn");
-  const collapsed = grid.classList.toggle("collapsed");
-  btn.textContent = collapsed ? "Mostrar Gráficas" : "Ocultar Gráficas";
-  if (!collapsed) renderCharts();
+  const themeBtn = document.getElementById("themeBtn");
+  if (themeBtn) themeBtn.textContent = saved === "graphite" ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro";
 }
 
 function showToast(msg, isWarn = false) {
@@ -630,17 +680,35 @@ function populateDropdowns() {
   const responsables = uniqueValues("Responsable");
   const solicitantes = uniqueValues("Solicitante");
 
+  populateSelect("fProyectoSelect", proyectos, "Proyecto");
   populateSelect("fResponsable", responsables, "Responsable");
   populateSelect("fSolicitante", solicitantes, "Solicitante");
+
+  const projSel = document.getElementById("fProyectoSelect");
+  if (projSel && [...projSel.options].some(o => o.value === selectedProject)) {
+    projSel.value = selectedProject;
+  }
 
   populateDatalist("dlProyectos", proyectos);
   populateDatalist("dlResponsables", responsables);
   populateDatalist("dlSolicitantes", solicitantes);
 }
 
+function onProjectSelectChange(projectName) {
+  selectedProject = projectName || "TODOS";
+  applyFilters();
+}
+
 function selectProjectCard(projectName) {
   selectedProject = selectedProject === projectName ? "TODOS" : projectName;
+  const projSel = document.getElementById("fProyectoSelect");
+  if (projSel && [...projSel.options].some(o => o.value === selectedProject)) {
+    projSel.value = selectedProject;
+  }
   applyFilters();
+  if (projectName !== "TODOS" && activeMainTab === "resumen") {
+    setMainTab("entregables");
+  }
 }
 
 function setScopeFilter(scopeVal) {
@@ -657,6 +725,8 @@ function resetFilters() {
   document.querySelectorAll("[data-scope]").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-scope") === "TODOS");
   });
+  const projSel = document.getElementById("fProyectoSelect");
+  if (projSel) projSel.value = "TODOS";
   document.getElementById("fResponsable").value = "TODOS";
   document.getElementById("fSolicitante").value = "TODOS";
   document.getElementById("fPrioridad").value = "TODOS";
@@ -700,9 +770,76 @@ function applyFilters() {
     return String(a.ID_Req).localeCompare(String(b.ID_Req));
   });
 
+  const navBadge = document.getElementById("navCountBadge");
+  if (navBadge) navBadge.textContent = String(filteredData.length);
+  updateMoreFiltersButton();
+
+  renderExecutiveKpis();
   renderProjectStrip();
   renderCharts();
   renderActiveView();
+  if (activeMainTab === "cronograma") renderGantt();
+}
+
+function renderExecutiveKpis() {
+  const grid = document.getElementById("kpiGrid");
+  if (!grid) return;
+
+  let totEst = 0;
+  let weighted = 0;
+  let activeCount = 0;
+  let doneCount = 0;
+  let extDelayCount = 0;
+  let extDelayHours = 0;
+  let maxActiveDate = "";
+  let maxAnyDate = "";
+
+  allData.forEach(r => {
+    const hEst = Number(r.Horas_Est || 0);
+    const pct = Number(r.Avance_Pct || 0);
+    const ext = Number(r.Horas_Demora_Externa || 0);
+    const fReal = String(r.Fecha_Real_Entrega || r.Fecha_Tentativa || "");
+    const isDone = r.Estado === "Terminado" || pct >= 100;
+
+    totEst += hEst;
+    weighted += hEst * (pct / 100);
+    if (isDone) doneCount++;
+    else {
+      activeCount++;
+      if (fReal && fReal > maxActiveDate) maxActiveDate = fReal;
+    }
+    if (fReal && fReal > maxAnyDate) maxAnyDate = fReal;
+    if (ext > 0) {
+      extDelayCount++;
+      extDelayHours += ext;
+    }
+  });
+
+  const globalPct = totEst > 0 ? (weighted / totEst) * 100 : 0;
+  const targetDate = maxActiveDate || maxAnyDate || "—";
+
+  grid.innerHTML = `
+    <article class="kpi-card">
+      <span class="kpi-label">Avance General Ponderado</span>
+      <span class="kpi-value tabular" style="color:var(--accent-primary);">${globalPct.toFixed(1)}%</span>
+      <span class="kpi-meta">${formatHoursLabel(totEst)} estimadas en ${allData.length} procedimientos</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Entregables en Curso</span>
+      <span class="kpi-value tabular">${activeCount}</span>
+      <span class="kpi-meta" style="color:var(--tone-sage); font-weight:600;">${doneCount} terminados</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Con Demora Externa</span>
+      <span class="kpi-value tabular" style="color:${extDelayCount > 0 ? "var(--tone-ochre)" : "var(--ink-primary)"};">${extDelayCount}</span>
+      <span class="kpi-meta">${extDelayHours > 0 ? `+${extDelayHours}h acumuladas por terceros` : "Sin bloqueos externos"}</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Cierre Real Estimado</span>
+      <span class="kpi-value tabular">${escapeHtml(targetDate)}</span>
+      <span class="kpi-meta">${activeCount > 0 ? "Según cola activa y festivos" : "Todo entregado"}</span>
+    </article>
+  `;
 }
 
 function renderProjectStrip() {
@@ -864,7 +1001,8 @@ function initCharts() {
 }
 
 function renderCharts() {
-  if (document.getElementById("analyticsGrid").classList.contains("collapsed")) return;
+  const panel = document.getElementById("panelResumen");
+  if (panel && !panel.classList.contains("active")) return;
   if (!chartHours) initCharts();
 
   const gridColor = getCssVar("--chart-grid");
@@ -981,21 +1119,20 @@ function renderCharts() {
    ========================================================================== */
 function setViewMode(mode) {
   viewMode = mode;
-  document.getElementById("viewBtnList").classList.toggle("active", mode === "list");
-  document.getElementById("viewBtnGantt").classList.toggle("active", mode === "gantt");
-  document.getElementById("viewBtnKanban").classList.toggle("active", mode === "kanban");
+  const btnList = document.getElementById("viewBtnList");
+  const btnKanban = document.getElementById("viewBtnKanban");
+  if (btnList) btnList.classList.toggle("active", mode === "list");
+  if (btnKanban) btnKanban.classList.toggle("active", mode === "kanban");
 
   document.getElementById("listViewContainer").style.display = mode === "list" ? "block" : "none";
-  document.getElementById("ganttViewContainer").classList.toggle("active", mode === "gantt");
   document.getElementById("kanbanViewContainer").classList.toggle("active", mode === "kanban");
   renderActiveView();
 }
 
 function renderActiveView() {
   updateSummaryStrip();
-  if (viewMode === "list") renderTable();
-  else if (viewMode === "gantt") renderGantt();
-  else if (viewMode === "kanban") renderKanban();
+  if (viewMode === "kanban") renderKanban();
+  else renderTable();
 }
 
 function updateSummaryStrip() {
@@ -1120,7 +1257,7 @@ function renderTable() {
     const solFull = escapeHtml(r.Solicitante || "");
 
     tr.innerHTML = `
-      <td>
+      <td data-label="Proyecto y Solicitud">
         <div class="id-badge tabular">${idSafe}</div>
         <div class="proj-chip">${escapeHtml(r.Proyecto)} · <span style="font-weight:400; color:var(--ink-secondary);">${escapeHtml(r.Fase_Etapa)}</span></div>
         <div class="person-line" title="Responsable: ${respFull} | Solicita: ${solFull}">
@@ -1132,13 +1269,13 @@ function renderTable() {
           ${solAgeBadge}
         </div>
       </td>
-      <td>
+      <td data-label="Procedimiento">
         <div class="proc-title">${escapeHtml(r.Descripcion)}${extraTag}</div>
         ${microBadgeHtml}
         ${detailHtml}
         ${commentBlock}
       </td>
-      <td>
+      <td data-label="Prioridad y Estado">
         <div class="stack-pills">
           <select class="pill-select ${prioClass}" ${disabledAttr} aria-label="Prioridad ${idSafe}"
             onchange="handleInlinePrioridadChange('${idArg}', this.value)">
@@ -1156,7 +1293,7 @@ function renderTable() {
           </select>
         </div>
       </td>
-      <td>
+      <td data-label="Avance %">
         <div class="progress-stack">
           <div class="progress-top-row">
             <input type="range" class="progress-slider" min="0" max="100" step="5" ${disabledAttr}
@@ -1177,14 +1314,14 @@ function renderTable() {
           </div>
         </div>
       </td>
-      <td>
+      <td data-label="Entrega Real y Horas">
         <span class="delivery-date tabular">${fReal}</span>
         <div class="delivery-meta">${metaLines}</div>
         <div class="hours-line tabular">
           <strong>${formatHoursLabel(r.Horas_Reales)}</strong> / ${formatHoursLabel(r.Horas_Est)} ${overrunHtml}
         </div>
       </td>
-      <td class="actions-col-cell">
+      <td data-label="Acciones" class="actions-col-cell">
         <div class="row-actions-col">
           <button class="icon-btn micro-btn" onclick="openMicroModal('${idArg}')">+ Ediciones</button>
           <button class="icon-btn ext-btn" onclick="openDelayModal('${idArg}')">+ Demora</button>
@@ -1681,7 +1818,11 @@ function todayIsoString() {
 }
 
 function openDrawer(req = null) {
-  if (!isUnlocked) return toggleAdminLock();
+  if (!isUnlocked) {
+    showToast("Activa el modo edición para crear o modificar procedimientos", true);
+    return toggleAdminLock();
+  }
+  const advDetails = document.getElementById("drawerAdvancedDetails");
   document.getElementById("drawerOverlay").classList.add("open");
   if (req) {
     document.getElementById("drawerTitle").textContent = `Editar ${req.ID_Req}`;
@@ -1705,6 +1846,9 @@ function openDrawer(req = null) {
     document.getElementById("inpComentariosExt").value = req.Comentarios_Externos || "";
     document.getElementById("inpTipo").value = req.Tipo;
     document.getElementById("inpAprobado").value = req.Aprobado || "Aprobado";
+    if (advDetails) {
+      advDetails.open = Boolean(Number(req.Horas_Demora_Externa || 0) > 0 || (req.Comentarios_Externos || "").trim() || Number(req.Cantidad_Ediciones || 0) > 0);
+    }
   } else {
     const today = todayIsoString();
     document.getElementById("drawerTitle").textContent = "Nuevo Procedimiento";
@@ -1717,6 +1861,7 @@ function openDrawer(req = null) {
     document.getElementById("inpEstado").value = "Pendiente";
     document.getElementById("inpAvance").value = 0;
     document.getElementById("inpHorasExt").value = 0;
+    if (advDetails) advDetails.open = false;
   }
 }
 
@@ -1831,11 +1976,18 @@ async function deleteProc(idReq) {
   }
 }
 
+document.addEventListener("click", e => {
+  const wrap = document.querySelector(".more-menu-wrap");
+  if (wrap && !wrap.contains(e.target)) closeMoreMenu();
+});
+
 window.addEventListener("keydown", e => {
   if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
     e.preventDefault();
+    if (activeMainTab !== "entregables") setMainTab("entregables");
     document.getElementById("searchInput").focus();
   } else if (e.key === "Escape") {
+    closeMoreMenu();
     closeAuthModal();
     closeMicroModal();
     closeDelayModal();
