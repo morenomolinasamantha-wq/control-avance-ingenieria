@@ -101,6 +101,17 @@
         <div class="projects-strip" id="projectsStrip"></div>
       </section>
 
+      <!-- REQUERIMIENTOS PUNTUALES (SEPARADOS DE PROYECTOS) -->
+      <section class="section-block" id="reqsSummarySection" style="display:none;">
+        <div class="section-label-row">
+          <div>
+            <h2 class="section-heading">Requerimientos Puntuales</h2>
+            <p class="section-sub">Solicitudes independientes que no forman parte de un proyecto formal</p>
+          </div>
+        </div>
+        <div class="projects-strip" id="reqsStrip"></div>
+      </section>
+
       <!-- ANALÍTICA VISUAL -->
       <section class="analytics-grid" id="analyticsGrid">
         <article class="card">
@@ -140,6 +151,12 @@
       <!-- BARRA DE FILTROS SIMPLIFICADA + PANEL DESPLEGABLE "MÁS FILTROS" -->
       <section class="filter-toolbar">
         <div class="filter-primary-row">
+          <div class="segmented" role="group" aria-label="Filtrar por tipo de registro">
+            <button type="button" class="seg-btn active" data-cat="TODOS" onclick="setCategoryFilter('TODOS')">Todos</button>
+            <button type="button" class="seg-btn" data-cat="Proyecto" onclick="setCategoryFilter('Proyecto')">Proyectos</button>
+            <button type="button" class="seg-btn" data-cat="Requerimiento" onclick="setCategoryFilter('Requerimiento')">Requerimientos</button>
+          </div>
+
           <div class="search-wrap">
             <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, proyecto, fecha o ID..." oninput="applyFilters()" />
             <kbd class="kbd-hint" aria-hidden="true">/</kbd>
@@ -430,14 +447,22 @@
           <fieldset class="form-section">
             <legend class="form-section-title">1. ¿Qué se pidió?</legend>
             <div class="form-grid">
+              <div class="field span-2">
+                <label for="inpCategoria">Tipo de registro *</label>
+                <select id="inpCategoria" onchange="onDrawerCategoriaChange()">
+                  <option value="Proyecto">Proyecto (parte de un proyecto formal)</option>
+                  <option value="Requerimiento">Requerimiento puntual (solicitud independiente)</option>
+                </select>
+              </div>
+
               <div class="field">
-                <label for="inpProyecto">Proyecto *</label>
+                <label for="inpProyecto" id="lblProyecto">Proyecto *</label>
                 <input type="text" id="inpProyecto" list="dlProyectos" required placeholder="Ej. T-LAB" />
                 <datalist id="dlProyectos"></datalist>
               </div>
 
               <div class="field">
-                <label for="inpFase">Fase / Etapa *</label>
+                <label for="inpFase" id="lblFase">Fase / Etapa *</label>
                 <input type="text" id="inpFase" required placeholder="Ej. Etapa 1 / Soporte" />
               </div>
 

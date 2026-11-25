@@ -2197,3 +2197,21 @@ body:not(.is-locked) .readonly-banner {
     grid-column: span 1;
   }
 }
+
+/* Etiquetas de categoría: Proyecto vs Requerimiento puntual */
+.tag-cat-proj {
+  background: var(--tone-steel-soft);
+  color: var(--tone-steel);
+}
+
+.tag-cat-req {
+  background: var(--tone-ochre-soft);
+  color: var(--tone-ochre);
+}
+
+.id-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}

@@ -19,6 +19,7 @@ let filteredData = [];
 let expandedDetails = new Set();
 let shiftedIds = new Set();
 let selectedProject = "TODOS";
+let selectedCategory = "TODOS";
 let selectedScope = "TODOS";
 let barAxis = "Proyecto";
 let donutAxis = "Responsable";
@@ -711,6 +712,20 @@ function selectProjectCard(projectName) {
   }
 }
 
+function getItemCategory(r) {
+  return String(r && r.Categoria ? r.Categoria : "Proyecto").trim().toLowerCase().startsWith("req")
+    ? "Requerimiento"
+    : "Proyecto";
+}
+
+function setCategoryFilter(catVal) {
+  selectedCategory = catVal || "TODOS";
+  document.querySelectorAll("[data-cat]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-cat") === selectedCategory);
+  });
+  applyFilters();
+}
+
 function setScopeFilter(scopeVal) {
   selectedScope = scopeVal;
   document.querySelectorAll("[data-scope]").forEach(btn => {
@@ -721,7 +736,11 @@ function setScopeFilter(scopeVal) {
 
 function resetFilters() {
   selectedProject = "TODOS";
+  selectedCategory = "TODOS";
   selectedScope = "TODOS";
+  document.querySelectorAll("[data-cat]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-cat") === "TODOS");
+  });
   document.querySelectorAll("[data-scope]").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-scope") === "TODOS");
   });
@@ -742,11 +761,12 @@ function applyFilters() {
   const est = document.getElementById("fEstado").value;
   const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
 
-  const hasActiveFilters = selectedProject !== "TODOS" || selectedScope !== "TODOS" ||
+  const hasActiveFilters = selectedProject !== "TODOS" || selectedCategory !== "TODOS" || selectedScope !== "TODOS" ||
     resp !== "TODOS" || sol !== "TODOS" || prio !== "TODOS" || est !== "TODOS" || q !== "";
   document.getElementById("resetBtn").style.display = hasActiveFilters ? "inline-flex" : "none";
 
   filteredData = allData.filter(r => {
+    if (selectedCategory !== "TODOS" && getItemCategory(r) !== selectedCategory) return false;
     if (selectedProject !== "TODOS" && r.Proyecto !== selectedProject) return false;
     if (selectedScope !== "TODOS" && r.Es_Adicional !== selectedScope) return false;
     if (resp !== "TODOS" && r.Responsable !== resp) return false;
@@ -754,7 +774,7 @@ function applyFilters() {
     if (prio !== "TODOS" && (r.Prioridad || "3 - Normal") !== prio) return false;
     if (est !== "TODOS" && r.Estado !== est) return false;
     if (q) {
-      const text = `${r.ID_Req} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle} ${r.Fecha_Solicitud || ""} ${r.Comentarios_Externos || ""}`.toLowerCase();
+      const text = `${r.ID_Req} ${getItemCategory(r)} ${r.Proyecto} ${r.Fase_Etapa} ${r.Solicitante} ${r.Responsable} ${r.Descripcion} ${r.Detalle} ${r.Fecha_Solicitud || ""} ${r.Comentarios_Externos || ""}`.toLowerCase();
       if (!text.includes(q)) return false;
     }
     return true;
@@ -815,6 +835,8 @@ function renderExecutiveKpis() {
     }
   });
 
+  const projCount = allData.filter(r => getItemCategory(r) === "Proyecto").length;
+  const reqCount = allData.length - projCount;
   const globalPct = totEst > 0 ? (weighted / totEst) * 100 : 0;
   const targetDate = maxActiveDate || maxAnyDate || "—";
 
@@ -822,7 +844,7 @@ function renderExecutiveKpis() {
     <article class="kpi-card">
       <span class="kpi-label">Avance General Ponderado</span>
       <span class="kpi-value tabular" style="color:var(--accent-primary);">${globalPct.toFixed(1)}%</span>
-      <span class="kpi-meta">${formatHoursLabel(totEst)} estimadas en ${allData.length} procedimientos</span>
+      <span class="kpi-meta">${projCount} en proyectos · ${reqCount} requerimientos (${formatHoursLabel(totEst)})</span>
     </article>
     <article class="kpi-card">
       <span class="kpi-label">Entregables en Curso</span>
@@ -847,6 +869,7 @@ function renderProjectStrip() {
   strip.innerHTML = "";
 
   const byProject = {};
+  const reqItems = [];
   let globalEst = 0;
   let globalWeighted = 0;
   let globalExtra = 0;
@@ -869,6 +892,11 @@ function renderProjectStrip() {
     globalEdiciones += eds;
     if (fReal && fReal > globalMaxRealDate) globalMaxRealDate = fReal;
 
+    if (getItemCategory(r) === "Requerimiento") {
+      reqItems.push(r);
+      return;
+    }
+
     if (!byProject[r.Proyecto]) {
       byProject[r.Proyecto] = { est: 0, weighted: 0, extra: 0, extDelay: 0, ediciones: 0, count: 0, maxDate: "" };
     }
@@ -888,7 +916,7 @@ function renderProjectStrip() {
 
   strip.appendChild(createProjectCapsule({
     key: "TODOS",
-    title: "Todos los Proyectos",
+    title: "Todos (Proyectos + Req.)",
     pct: globalPct,
     hours: globalEst,
     extraHours: globalExtra,
@@ -913,6 +941,91 @@ function renderProjectStrip() {
       maxDate: info.maxDate
     }));
   });
+
+  // Sección separada: Requerimientos Puntuales
+  const reqSec = document.getElementById("reqsSummarySection");
+  const reqStrip = document.getElementById("reqsStrip");
+  if (reqSec && reqStrip) {
+    if (!reqItems.length) {
+      reqSec.style.display = "none";
+      reqStrip.innerHTML = "";
+    } else {
+      reqSec.style.display = "block";
+      reqStrip.innerHTML = "";
+      let rEst = 0, rW = 0, rExtra = 0, rExt = 0, rEds = 0, rMaxDate = "";
+      const byArea = {};
+      reqItems.forEach(r => {
+        const hEst = Number(r.Horas_Est || 0);
+        const pct = Number(r.Avance_Pct || 0);
+        const isExtra = r.Es_Adicional === "Sí";
+        const extH = Number(r.Horas_Demora_Externa || 0);
+        const eds = Number(r.Cantidad_Ediciones || 0);
+        const fReal = String(r.Fecha_Real_Entrega || r.Fecha_Tentativa || "");
+        const area = (r.Solicitante || "General").trim();
+
+        rEst += hEst;
+        rW += hEst * (pct / 100);
+        if (isExtra) rExtra += hEst;
+        rExt += extH;
+        rEds += eds;
+        if (fReal && fReal > rMaxDate) rMaxDate = fReal;
+
+        if (!byArea[area]) byArea[area] = { est: 0, weighted: 0, extra: 0, extDelay: 0, ediciones: 0, count: 0, maxDate: "" };
+        byArea[area].est += hEst;
+        byArea[area].weighted += hEst * (pct / 100);
+        if (isExtra) byArea[area].extra += hEst;
+        byArea[area].extDelay += extH;
+        byArea[area].ediciones += eds;
+        byArea[area].count += 1;
+        if (fReal && fReal > byArea[area].maxDate) byArea[area].maxDate = fReal;
+      });
+
+      const allReqCard = createProjectCapsule({
+        key: "__REQ_ALL__",
+        title: "Todos los Requerimientos",
+        pct: rEst > 0 ? (rW / rEst) * 100 : 0,
+        hours: rEst,
+        extraHours: rExtra,
+        extDelay: rExt,
+        ediciones: rEds,
+        count: reqItems.length,
+        maxDate: rMaxDate
+      });
+      allReqCard.onclick = () => {
+        selectedProject = "TODOS";
+        const projSel = document.getElementById("fProyectoSelect");
+        if (projSel) projSel.value = "TODOS";
+        document.getElementById("fSolicitante").value = "TODOS";
+        setCategoryFilter("Requerimiento");
+        setMainTab("entregables");
+      };
+      reqStrip.appendChild(allReqCard);
+
+      Object.keys(byArea).forEach(area => {
+        const info = byArea[area];
+        const card = createProjectCapsule({
+          key: `__REQ_${area}`,
+          title: `Solicitudes · ${area}`,
+          pct: info.est > 0 ? (info.weighted / info.est) * 100 : 0,
+          hours: info.est,
+          extraHours: info.extra,
+          extDelay: info.extDelay,
+          ediciones: info.ediciones,
+          count: info.count,
+          maxDate: info.maxDate
+        });
+        card.onclick = () => {
+          selectedProject = "TODOS";
+          const projSel = document.getElementById("fProyectoSelect");
+          if (projSel) projSel.value = "TODOS";
+          document.getElementById("fSolicitante").value = area;
+          setCategoryFilter("Requerimiento");
+          setMainTab("entregables");
+        };
+        reqStrip.appendChild(card);
+      });
+    }
+  }
 }
 
 function createProjectCapsule({ key, title, pct, hours, extraHours, extDelay, ediciones, count, maxDate }) {
@@ -1256,9 +1369,17 @@ function renderTable() {
     const respFull = escapeHtml(r.Responsable || "Sin asignar");
     const solFull = escapeHtml(r.Solicitante || "");
 
+    const catName = getItemCategory(r);
+    const catBadge = catName === "Requerimiento"
+      ? `<span class="pill-tag tag-cat-req">Requerimiento</span>`
+      : `<span class="pill-tag tag-cat-proj">Proyecto</span>`;
+
     tr.innerHTML = `
       <td data-label="Proyecto y Solicitud">
-        <div class="id-badge tabular">${idSafe}</div>
+        <div class="id-cat-row">
+          <span class="id-badge tabular">${idSafe}</span>
+          ${catBadge}
+        </div>
         <div class="proj-chip">${escapeHtml(r.Proyecto)} · <span style="font-weight:400; color:var(--ink-secondary);">${escapeHtml(r.Fase_Etapa)}</span></div>
         <div class="person-line" title="Responsable: ${respFull} | Solicita: ${solFull}">
           <span class="avatar-mini">${escapeHtml(getInitials(r.Responsable))}</span>
@@ -1468,9 +1589,14 @@ function renderKanban() {
            </div>`
         : "";
 
+      const catName = getItemCategory(r);
+      const catBadge = catName === "Requerimiento"
+        ? `<span class="pill-tag tag-cat-req">Req.</span>`
+        : `<span class="pill-tag tag-cat-proj">Proy.</span>`;
+
       return `<div class="kanban-card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="id-badge tabular">${idSafe}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+          <span class="id-cat-row"><span class="id-badge tabular">${idSafe}</span>${catBadge}</span>
           <span class="pill-tag prio-${prioDigit}">${escapeHtml(prioStr)}</span>
         </div>
         <div class="proc-title" style="font-size:0.82rem;">${escapeHtml(r.Descripcion)}</div>
@@ -1800,6 +1926,30 @@ async function persistInlineProgress(idReq, patchPayload, prevDates) {
 /* ==========================================================================
    DRAWER CREAR / EDITAR COMPLETO
    ========================================================================== */
+function onDrawerCategoriaChange() {
+  const cat = document.getElementById("inpCategoria").value;
+  const inpProy = document.getElementById("inpProyecto");
+  const inpFase = document.getElementById("inpFase");
+  const lblProy = document.getElementById("lblProyecto");
+  const lblFase = document.getElementById("lblFase");
+
+  if (cat === "Requerimiento") {
+    inpProy.required = false;
+    inpFase.required = false;
+    if (lblProy) lblProy.textContent = "Proyecto relacionado (Opcional)";
+    if (lblFase) lblFase.textContent = "Área o tema (Opcional)";
+    inpProy.placeholder = "Opcional · Si queda vacío: Requerimientos Generales";
+    inpFase.placeholder = "Opcional · Ej. Solicitud puntual";
+  } else {
+    inpProy.required = true;
+    inpFase.required = true;
+    if (lblProy) lblProy.textContent = "Proyecto *";
+    if (lblFase) lblFase.textContent = "Fase / Etapa *";
+    inpProy.placeholder = "Ej. T-LAB";
+    inpFase.placeholder = "Ej. Etapa 1 / Soporte";
+  }
+}
+
 function onDrawerEstadoChange() {
   const est = document.getElementById("inpEstado").value;
   const currentPct = document.getElementById("inpAvance").value;
@@ -1827,6 +1977,8 @@ function openDrawer(req = null) {
   if (req) {
     document.getElementById("drawerTitle").textContent = `Editar ${req.ID_Req}`;
     document.getElementById("editIdReq").value = req.ID_Req;
+    document.getElementById("inpCategoria").value = getItemCategory(req);
+    onDrawerCategoriaChange();
     document.getElementById("inpProyecto").value = req.Proyecto;
     document.getElementById("inpFase").value = req.Fase_Etapa;
     document.getElementById("inpSolicitante").value = req.Solicitante;
@@ -1854,6 +2006,8 @@ function openDrawer(req = null) {
     document.getElementById("drawerTitle").textContent = "Nuevo Procedimiento";
     document.getElementById("editIdReq").value = "";
     document.getElementById("procForm").reset();
+    document.getElementById("inpCategoria").value = "Proyecto";
+    onDrawerCategoriaChange();
     document.getElementById("inpFechaSolicitud").value = today;
     document.getElementById("inpFechaRegistro").value = today;
     document.getElementById("inpCantEdiciones").value = 0;
@@ -1881,9 +2035,14 @@ async function submitDrawerForm(e) {
   const fechaReg = document.getElementById("inpFechaRegistro").value || today;
   const fechaSol = document.getElementById("inpFechaSolicitud").value || fechaReg;
 
+  const categoria = document.getElementById("inpCategoria").value || "Proyecto";
+  const rawProy = (document.getElementById("inpProyecto").value || "").trim();
+  const rawFase = (document.getElementById("inpFase").value || "").trim();
+
   const payload = {
-    Proyecto: document.getElementById("inpProyecto").value,
-    Fase_Etapa: document.getElementById("inpFase").value,
+    Categoria: categoria,
+    Proyecto: rawProy || (categoria === "Requerimiento" ? "Requerimientos Generales" : ""),
+    Fase_Etapa: rawFase || (categoria === "Requerimiento" ? "Solicitud puntual" : "General"),
     Solicitante: document.getElementById("inpSolicitante").value,
     Responsable: document.getElementById("inpResponsable").value,
     Fecha_Solicitud: fechaSol,

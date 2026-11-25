@@ -85,8 +85,28 @@ HEADERS = [
     "Fecha_Solicitud", "Fecha_Registro",
     "Prioridad", "Fecha_Base", "Fecha_Tentativa", "Desplazamiento_Dias",
     "Horas_Demora_Externa", "Comentarios_Externos", "Fecha_Real_Entrega",
-    "Dias_Desde_Solicitud", "Cantidad_Ediciones"
+    "Dias_Desde_Solicitud", "Cantidad_Ediciones", "Categoria"
 ]
+
+
+def _normalize_categoria_fields(categoria: Optional[str], proyecto: Optional[str], fase: Optional[str]) -> tuple[str, str, str]:
+    cat_raw = (categoria or "Proyecto").strip().lower()
+    cat_clean = "Requerimiento" if cat_raw.startswith("req") else "Proyecto"
+    proy_clean = (proyecto or "").strip()
+    fase_clean = (fase or "").strip()
+
+    if cat_clean == "Requerimiento":
+        if not proy_clean:
+            proy_clean = "Requerimientos Generales"
+        if not fase_clean:
+            fase_clean = "Solicitud puntual"
+    else:
+        if not proy_clean:
+            raise HTTPException(status_code=422, detail="El campo 'Proyecto' es obligatorio cuando la categoría es Proyecto.")
+        if not fase_clean:
+            fase_clean = "General"
+
+    return cat_clean, proy_clean, fase_clean
 
 
 class AuthCheckInput(BaseModel):
@@ -94,8 +114,9 @@ class AuthCheckInput(BaseModel):
 
 
 class RequerimientoInput(BaseModel):
-    Proyecto: str
-    Fase_Etapa: str
+    Categoria: str = "Proyecto"
+    Proyecto: Optional[str] = ""
+    Fase_Etapa: Optional[str] = ""
     Solicitante: str
     Responsable: str
     Descripcion: str
@@ -493,6 +514,7 @@ def ensure_excel_exists():
             d.setdefault("Horas_Demora_Externa", 0)
             d.setdefault("Comentarios_Externos", "")
             d.setdefault("Cantidad_Ediciones", 0)
+            d["Categoria"] = "Requerimiento" if str(d.get("Categoria") or "").strip().lower().startswith("req") else "Proyecto"
             items.append(d)
         compute_cascade_schedule(items)
         for idx, it in enumerate(items, start=2):
@@ -511,7 +533,7 @@ def style_row(ws, row_idx: int):
     fill = zebra_fill if row_idx % 2 == 0 else white_fill
     ws.row_dimensions[row_idx].height = 34
 
-    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25}
+    center_cols = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26}
     for col_idx in range(1, len(HEADERS) + 1):
         c = ws.cell(row=row_idx, column=col_idx)
         c.fill = fill
@@ -567,6 +589,8 @@ def read_items_from_ws(ws) -> list[dict]:
         item["Comentarios_Externos"] = str(item.get("Comentarios_Externos") or "").strip()
         item["Dias_Desde_Solicitud"] = int(item.get("Dias_Desde_Solicitud") or 0)
         item["Cantidad_Ediciones"] = int(item.get("Cantidad_Ediciones") or 0)
+        cat_val = str(item.get("Categoria") or "Proyecto").strip()
+        item["Categoria"] = "Requerimiento" if cat_val.lower().startswith("req") else "Proyecto"
         items.append(item)
     return items
 
@@ -667,7 +691,8 @@ def get_all_data(pull: bool = False):
 
         catalogos = {
             "Proyectos": [], "Solicitantes": [], "Responsables": [],
-            "Tipos": [], "Estados": [], "Prioridades": ["1 - Urgente", "2 - Alta", "3 - Normal", "4 - Baja"]
+            "Tipos": [], "Estados": [], "Prioridades": ["1 - Urgente", "2 - Alta", "3 - Normal", "4 - Baja"],
+            "Categorias": ["Proyecto", "Requerimiento"]
         }
         if "Catalogos" in wb.sheetnames:
             ws_cat = wb["Catalogos"]
@@ -721,10 +746,15 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
             changed_field="estado" if payload.Avance_Pct == 0 and payload.Estado != "Pendiente" else "avance"
         )
 
+        cat_final, proy_final, fase_final = _normalize_categoria_fields(
+            payload.Categoria, payload.Proyecto, payload.Fase_Etapa
+        )
+
         items.append({
             "ID_Req": new_id,
-            "Proyecto": payload.Proyecto.strip(),
-            "Fase_Etapa": payload.Fase_Etapa.strip(),
+            "Categoria": cat_final,
+            "Proyecto": proy_final,
+            "Fase_Etapa": fase_final,
             "Solicitante": payload.Solicitante.strip(),
             "Responsable": payload.Responsable.strip(),
             "Descripcion": payload.Descripcion.strip(),
@@ -784,9 +814,14 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
             payload.Estado, payload.Avance_Pct, changed_field=changed_field
         )
 
+        cat_final, proy_final, fase_final = _normalize_categoria_fields(
+            payload.Categoria, payload.Proyecto, payload.Fase_Etapa
+        )
+
         target.update({
-            "Proyecto": payload.Proyecto.strip(),
-            "Fase_Etapa": payload.Fase_Etapa.strip(),
+            "Categoria": cat_final,
+            "Proyecto": proy_final,
+            "Fase_Etapa": fase_final,
             "Solicitante": payload.Solicitante.strip(),
             "Responsable": payload.Responsable.strip(),
             "Descripcion": payload.Descripcion.strip(),
