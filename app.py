@@ -3,22 +3,28 @@ import json
 import math
 import base64
 import hmac
+import logging
 import threading
 import urllib.request
 import urllib.error
+from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import date, datetime, timedelta
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+logger = logging.getLogger("ingenieria_bi")
 
 BASE_DIR = Path(__file__).resolve().parent
 EXCEL_FILE = BASE_DIR / "requerimientos_ingenieria.xlsx"
 INDEX_FILE = BASE_DIR / "index.html"
+STATIC_DIR = BASE_DIR / "static"
 
 HORAS_POR_DIA = 8.0
 
@@ -29,20 +35,48 @@ GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main").strip()
 GITHUB_FILE_PATH = os.environ.get("GITHUB_FILE_PATH", "requerimientos_ingenieria.xlsx").strip()
 
 # Clave de edición (configurable por variable de entorno ADMIN_PASSWORD en Render)
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "tecval2026").strip()
+DEFAULT_ADMIN_PASSWORD = "tecval2026"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD).strip()
 
-app = FastAPI(title="Ingeniería BI - Control de Procedimientos, Festivos y Entregas Reales")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Orígenes CORS (por defecto '*', configurable con lista separada por comas en CORS_ORIGINS)
+_cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+CORS_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env != "*" else ["*"]
 
 excel_lock = threading.Lock()
 github_sync_lock = threading.Lock()
 last_github_sync_status = "local_only" if not GITHUB_TOKEN else "pending"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if ADMIN_PASSWORD == DEFAULT_ADMIN_PASSWORD:
+        logger.warning(
+            "ADMIN_PASSWORD está usando el valor por defecto. "
+            "Configura la variable de entorno ADMIN_PASSWORD en producción."
+        )
+    with excel_lock:
+        try:
+            pull_excel_from_github()
+            ensure_excel_exists()
+        except Exception as e:
+            logger.warning("Error migrando Excel al iniciar: %s", e)
+    yield
+
+
+app = FastAPI(
+    title="Ingeniería BI - Control de Procedimientos, Festivos y Entregas Reales",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 HEADERS = [
     "ID_Req", "Proyecto", "Fase_Etapa", "Solicitante", "Responsable",
@@ -68,23 +102,23 @@ class RequerimientoInput(BaseModel):
     Detalle: Optional[str] = ""
     Tipo: str
     Es_Adicional: str = "No"
-    Horas_Est: float = 0
-    Horas_Reales: float = 0
-    Avance_Pct: float = 0
+    Horas_Est: float = Field(default=0, ge=0)
+    Horas_Reales: float = Field(default=0, ge=0)
+    Avance_Pct: float = Field(default=0, ge=0, le=100)
     Estado: str = "Pendiente"
     Aprobado: str = "Pendiente"
     Fecha_Solicitud: Optional[str] = None
     Fecha_Registro: Optional[str] = None
     Prioridad: str = "3 - Normal"
-    Horas_Demora_Externa: float = 0
+    Horas_Demora_Externa: float = Field(default=0, ge=0)
     Comentarios_Externos: Optional[str] = ""
-    Cantidad_Ediciones: int = 0
+    Cantidad_Ediciones: int = Field(default=0, ge=0)
 
 
 class ProgressPatchInput(BaseModel):
     Estado: Optional[str] = None
-    Avance_Pct: Optional[float] = None
-    Horas_Reales: Optional[float] = None
+    Avance_Pct: Optional[float] = Field(default=None, ge=0, le=100)
+    Horas_Reales: Optional[float] = Field(default=None, ge=0)
 
 
 class PriorityPatchInput(BaseModel):
@@ -92,13 +126,13 @@ class PriorityPatchInput(BaseModel):
 
 
 class ExternalDelayPatchInput(BaseModel):
-    Horas_Demora_Externa: float = 0
+    Horas_Demora_Externa: float = Field(default=0, ge=0)
     Comentarios_Externos: Optional[str] = ""
 
 
 class MicroEditBatchInput(BaseModel):
-    cantidad_sumar: int = 1
-    minutos_sumar: float = 0
+    cantidad_sumar: int = Field(default=1, ge=0)
+    minutos_sumar: float = Field(default=0, ge=0)
     nota: Optional[str] = ""
 
 
@@ -403,6 +437,17 @@ def sync_estado_y_porcentaje(estado: str, avance: float, changed_field: str = "a
     return estado_clean, round(pct, 1)
 
 
+_DAY_NAMES_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+
+def _populate_holidays_sheet(wb, years: tuple[int, ...]):
+    ws_hol = wb.create_sheet(title="Festivos_Colombia")
+    ws_hol.append(["Fecha", "Día", "Festivo Oficial Colombia"])
+    for yr in years:
+        for dt, name in get_colombia_holidays(yr).items():
+            ws_hol.append([dt.isoformat(), _DAY_NAMES_ES[dt.weekday()], name])
+
+
 def ensure_excel_exists():
     if not EXCEL_FILE.exists():
         wb = openpyxl.Workbook()
@@ -415,6 +460,8 @@ def ensure_excel_exists():
         ws_cat.append(["CRONOGRAMA", "Ingenieria", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
         ws_cat.append(["Catálogo Válvulas", "Laboratorio", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
         ws_cat.append(["Portal Corporativo", "Comercial", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
+        today_year = date.today().year
+        _populate_holidays_sheet(wb, (today_year, today_year + 1))
         wb.save(EXCEL_FILE)
         return
 
@@ -492,7 +539,7 @@ def save_workbook_safe(wb, sync_cloud: bool = True):
             detail="El archivo 'requerimientos_ingenieria.xlsx' está abierto en Excel. Ciérralo para guardar los cambios en disco."
         )
     if sync_cloud and GITHUB_TOKEN and GITHUB_REPO:
-        push_excel_to_github()
+        trigger_async_github_sync()
 
 
 def read_items_from_ws(ws) -> list[dict]:
@@ -548,14 +595,24 @@ def get_file_metadata():
     }
 
 
-@app.on_event("startup")
-def on_startup():
-    with excel_lock:
-        try:
-            pull_excel_from_github()
-            ensure_excel_exists()
-        except Exception as e:
-            print(f"[STARTUP WARNING] Error migrando Excel al iniciar: {e}")
+def _items_signature(items: list[dict]) -> list[tuple]:
+    return [tuple(it.get(h, "") for h in HEADERS) for it in items]
+
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "file_info": get_file_metadata()}
+
+
+@app.get("/api/holidays/{year}")
+def get_holidays_for_year(year: int):
+    if year < 1900 or year > 2200:
+        raise HTTPException(status_code=400, detail="Año fuera de rango permitido (1900-2200)")
+    holidays = get_colombia_holidays(year)
+    return {
+        "year": year,
+        "holidays": {dt.isoformat(): name for dt, name in holidays.items()}
+    }
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -599,12 +656,14 @@ def get_all_data(pull: bool = False):
         ws = wb["Requerimientos"]
 
         items = read_items_from_ws(ws)
+        before_sig = _items_signature(items)
         compute_cascade_schedule(items)
-        write_items_to_ws(ws, items)
-        try:
-            wb.save(EXCEL_FILE)
-        except PermissionError:
-            pass
+        if _items_signature(items) != before_sig:
+            write_items_to_ws(ws, items)
+            try:
+                wb.save(EXCEL_FILE)
+            except PermissionError:
+                pass
 
         catalogos = {
             "Proyectos": [], "Solicitantes": [], "Responsables": [],
@@ -717,6 +776,14 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
         fecha_reg = (payload.Fecha_Registro or target.get("Fecha_Registro") or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
         fecha_sol = (payload.Fecha_Solicitud or target.get("Fecha_Solicitud") or fecha_reg).strip()[:10]
 
+        changed_field = "estado" if (
+            payload.Estado.strip() != target.get("Estado")
+            and round(float(payload.Avance_Pct or 0), 1) == round(float(target.get("Avance_Pct") or 0), 1)
+        ) else "avance"
+        estado_final, avance_final = sync_estado_y_porcentaje(
+            payload.Estado, payload.Avance_Pct, changed_field=changed_field
+        )
+
         target.update({
             "Proyecto": payload.Proyecto.strip(),
             "Fase_Etapa": payload.Fase_Etapa.strip(),
@@ -728,8 +795,8 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
             "Es_Adicional": payload.Es_Adicional.strip(),
             "Horas_Est": round(float(payload.Horas_Est or 0), 2),
             "Horas_Reales": round(float(payload.Horas_Reales or 0), 2),
-            "Avance_Pct": round(float(payload.Avance_Pct or 0), 1),
-            "Estado": payload.Estado.strip(),
+            "Avance_Pct": avance_final,
+            "Estado": estado_final,
             "Aprobado": payload.Aprobado.strip(),
             "Fecha_Solicitud": fecha_sol,
             "Fecha_Registro": fecha_reg,
