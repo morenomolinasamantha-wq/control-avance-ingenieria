@@ -436,10 +436,79 @@ function toggleCharts() {
 
 function showToast(msg, isWarn = false) {
   const el = document.getElementById("toast");
-  el.textContent = msg;
+  const icon = isWarn ? "⚠" : "✓";
+  el.textContent = `${icon}  ${msg}`;
   el.className = isWarn ? "toast warn show" : "toast show";
   clearTimeout(el._timer);
   el._timer = setTimeout(() => el.classList.remove("show"), 3800);
+}
+
+function renderLoadingSkeletons() {
+  const strip = document.getElementById("projectsStrip");
+  if (strip && !allData.length) {
+    strip.innerHTML = Array.from({ length: 4 }, () => `
+      <div class="skeleton-card" aria-hidden="true">
+        <div class="skeleton-block skeleton-circle"></div>
+        <div class="skeleton-stack">
+          <div class="skeleton-block" style="height:13px; width:65%;"></div>
+          <div class="skeleton-block" style="height:10px; width:85%;"></div>
+          <div class="skeleton-block" style="height:10px; width:50%;"></div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  const tbody = document.getElementById("tableBody");
+  if (tbody && !allData.length) {
+    tbody.innerHTML = Array.from({ length: 4 }, () => `
+      <tr class="skeleton-row" aria-hidden="true">
+        <td><div class="skeleton-stack"><div class="skeleton-block" style="height:12px; width:55%;"></div><div class="skeleton-block" style="height:10px; width:80%;"></div></div></td>
+        <td><div class="skeleton-stack"><div class="skeleton-block" style="height:13px; width:75%;"></div><div class="skeleton-block" style="height:10px; width:92%;"></div></div></td>
+        <td><div class="skeleton-stack"><div class="skeleton-block" style="height:22px; width:88px; border-radius:999px;"></div><div class="skeleton-block" style="height:22px; width:96px; border-radius:999px;"></div></div></td>
+        <td><div class="skeleton-block" style="height:14px; width:90%;"></div></td>
+        <td><div class="skeleton-stack"><div class="skeleton-block" style="height:12px; width:75%;"></div><div class="skeleton-block" style="height:10px; width:60%;"></div></div></td>
+        <td class="actions-col-cell"><div class="skeleton-block" style="height:24px; width:100%;"></div></td>
+      </tr>
+    `).join("");
+  }
+}
+
+function buildEmptyStateHtml() {
+  const hasData = allData.length > 0;
+  const title = hasData
+    ? "Sin resultados para los filtros actuales"
+    : "Aún no hay procedimientos registrados";
+  const desc = hasData
+    ? "Prueba ajustando la búsqueda o limpia los filtros activos para volver a ver todo el cronograma."
+    : "Desbloquea el modo edición para registrar el primer procedimiento y calcular entregas automáticamente.";
+  const actionBtn = hasData
+    ? `<button type="button" class="btn btn-secondary" onclick="resetFilters()">Limpiar filtros</button>`
+    : (isUnlocked
+        ? `<button type="button" class="btn btn-primary" onclick="openDrawer()">+ Nuevo procedimiento</button>`
+        : `<button type="button" class="btn btn-secondary" onclick="toggleAdminLock()">Desbloquear edición</button>`);
+
+  return `
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.5-3.5"></path>
+          <path d="M8.5 11h5"></path>
+        </svg>
+      </div>
+      <div class="empty-state-title">${title}</div>
+      <div class="empty-state-desc">${desc}</div>
+      <div class="empty-state-actions">${actionBtn}</div>
+    </div>
+  `;
+}
+
+function getSliderColor(pct) {
+  const val = Number(pct || 0);
+  if (val >= 100) return "var(--tone-sage)";
+  if (val >= 50) return "var(--accent-primary)";
+  if (val > 0) return "var(--tone-ochre)";
+  return "var(--tone-neutral)";
 }
 
 function formatHoursLabel(h) {
@@ -968,6 +1037,13 @@ function renderTable() {
   tbody.innerHTML = "";
   const disabledAttr = isUnlocked ? "" : "disabled";
 
+  if (!filteredData.length) {
+    const emptyTr = document.createElement("tr");
+    emptyTr.innerHTML = `<td colspan="6" style="padding:0; border-bottom:none;">${buildEmptyStateHtml()}</td>`;
+    tbody.appendChild(emptyTr);
+    return;
+  }
+
   filteredData.forEach(r => {
     const tr = document.createElement("tr");
     if (r.Es_Adicional === "Sí") tr.classList.add("is-extra");
@@ -1085,7 +1161,8 @@ function renderTable() {
           <div class="progress-top-row">
             <input type="range" class="progress-slider" min="0" max="100" step="5" ${disabledAttr}
               value="${Number(r.Avance_Pct || 0)}"
-              oninput="previewSliderPct('${idArg}', this.value)"
+              style="--slider-pct:${Number(r.Avance_Pct || 0)}%; --slider-color:${getSliderColor(r.Avance_Pct)};"
+              oninput="previewSliderPct('${idArg}', this.value, this)"
               onchange="handleInlineAvanceChange('${idArg}', this.value)" />
             <span class="pct-box">
               <input type="number" id="pct-num-${idSafe}" min="0" max="100" step="1" ${disabledAttr}
@@ -1134,7 +1211,7 @@ function stepProgress(idReq, delta) {
 function renderGantt() {
   const container = document.getElementById("ganttViewContainer");
   if (!filteredData.length) {
-    container.innerHTML = `<p class="proc-sub">No hay procedimientos en el filtro actual.</p>`;
+    container.innerHTML = buildEmptyStateHtml();
     return;
   }
 
@@ -1282,9 +1359,13 @@ function renderKanban() {
   }).join("");
 }
 
-function previewSliderPct(idReq, val) {
+function previewSliderPct(idReq, val, sliderEl) {
   const box = document.getElementById(`pct-num-${idReq}`);
   if (box) box.value = val;
+  if (sliderEl) {
+    sliderEl.style.setProperty("--slider-pct", `${Number(val || 0)}%`);
+    sliderEl.style.setProperty("--slider-color", getSliderColor(val));
+  }
 }
 
 function snapshotDates() {
@@ -1765,5 +1846,6 @@ window.addEventListener("keydown", e => {
 window.addEventListener("DOMContentLoaded", () => {
   initTheme();
   updateLockUI();
+  renderLoadingSkeletons();
   loadData(false);
 });

@@ -29,11 +29,13 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="btn btn-lock-locked" id="lockBtn" onclick="toggleAdminLock()">Solo Lectura · Desbloquear</button>
         <button class="btn btn-ghost" id="simToggleBtn" onclick="toggleSimulator()">Simulador Capacidad</button>
+        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Modo Claro</button>
+        <span class="topbar-divider" aria-hidden="true"></span>
         <button class="btn btn-ghost" onclick="copyExecutiveReport()">Copiar Reporte</button>
-        <button class="btn btn-ghost" id="themeBtn" onclick="toggleTheme()">Papel Cálido</button>
         <a class="btn btn-secondary" href="/api/export" target="_blank">Exportar .xlsx</a>
+        <span class="topbar-divider" aria-hidden="true"></span>
+        <button class="btn btn-lock-locked" id="lockBtn" onclick="toggleAdminLock()">Solo Lectura · Desbloquear</button>
         <button class="btn btn-primary" id="newProcBtn" style="display:none;" onclick="openDrawer()">+ Nuevo</button>
       </div>
     </div>
@@ -78,7 +80,10 @@
     <!-- 3. BARRA DE FILTROS CONTEXTUALES -->
     <section class="filter-toolbar">
       <div class="filter-controls">
-        <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, fecha o ID ( / )..." oninput="applyFilters()" />
+        <div class="search-wrap">
+          <input type="text" id="searchInput" class="input-clean" placeholder="Buscar procedimiento, fecha o ID..." oninput="applyFilters()" />
+          <kbd class="kbd-hint" aria-hidden="true">/</kbd>
+        </div>
 
         <select id="fResponsable" class="select-clean" onchange="applyFilters()">
           <option value="TODOS">Responsable: Todos</option>
@@ -113,7 +118,7 @@
 
       <div style="display:flex; align-items:center; gap:8px;">
         <button class="btn btn-ghost" id="toggleChartsBtn" onclick="toggleCharts()">Ocultar Gráficas</button>
-        <button class="btn btn-ghost" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
+        <button class="btn btn-ghost btn-reset-active" id="resetBtn" style="display:none;" onclick="resetFilters()">Limpiar filtros</button>
       </div>
     </section>
 
