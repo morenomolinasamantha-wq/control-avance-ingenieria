@@ -7,6 +7,8 @@ const FALLBACK_DATA = [
 
 const PIN_STORAGE_KEY = "ing_bi_admin_pin";
 const LOCAL_STORAGE_KEY = "ing_bi_local_items_v1";
+const LOCAL_VAC_STORAGE_KEY = "ing_bi_local_vac_v1";
+const ALL_TEAM_LABEL = "Todo el equipo";
 const holidayMapCache = {};
 
 let adminPin = sessionStorage.getItem(PIN_STORAGE_KEY) || "";
@@ -15,6 +17,8 @@ let simHoursPerDay = 8.0;
 let simCapacityMult = 1.0;
 
 let allData = [];
+let allVacaciones = [];
+let catalogResponsables = [];
 let filteredData = [];
 let expandedDetails = new Set();
 let shiftedIds = new Set();
@@ -281,32 +285,63 @@ function getHolidayName(d) {
   return getColombiaHolidaysMap(d.getFullYear()).get(formatIsoDate(d)) || null;
 }
 
-function isWorkingDay(d) {
-  const wd = d.getDay();
-  if (wd === 0 || wd === 6) return false;
-  return !getHolidayName(d);
+function buildLocalVacationSets(vacs) {
+  const globalSet = new Set();
+  const byResp = {};
+  (vacs || []).forEach(v => {
+    const resp = String(v.Responsable || "").trim();
+    if (!resp || !v.Fecha_Inicio || !v.Fecha_Fin) return;
+    let d1 = parseIsoDate(v.Fecha_Inicio);
+    let d2 = parseIsoDate(v.Fecha_Fin);
+    if (d2.getTime() < d1.getTime()) [d1, d2] = [d2, d1];
+    const isAll = [ALL_TEAM_LABEL.toLowerCase(), "todos", "__all__"].includes(resp.toLowerCase());
+    const target = isAll ? globalSet : (byResp[resp.toLowerCase()] || (byResp[resp.toLowerCase()] = new Set()));
+    let curr = new Date(d1.getTime());
+    let safety = 0;
+    while (curr.getTime() <= d2.getTime() && safety < 366) {
+      target.add(formatIsoDate(curr));
+      curr.setDate(curr.getDate() + 1);
+      safety++;
+    }
+  });
+  return { globalSet, byResp };
 }
 
-function addWorkingDays(startDate, workingDays) {
+function getBlockedSetForResp(resp, vacSets) {
+  const merged = new Set(vacSets.globalSet);
+  const specific = vacSets.byResp[String(resp || "").trim().toLowerCase()];
+  if (specific) specific.forEach(d => merged.add(d));
+  return merged;
+}
+
+function isWorkingDay(d, blockedSet = null) {
+  const wd = d.getDay();
+  if (wd === 0 || wd === 6) return false;
+  if (getHolidayName(d)) return false;
+  if (blockedSet && blockedSet.has(formatIsoDate(d))) return false;
+  return true;
+}
+
+function addWorkingDays(startDate, workingDays, blockedSet = null) {
   const curr = new Date(startDate.getTime());
   let added = 0;
   while (added < workingDays) {
     curr.setDate(curr.getDate() + 1);
-    if (isWorkingDay(curr)) added++;
+    if (isWorkingDay(curr, blockedSet)) added++;
   }
   return curr;
 }
 
-function nextWorkingDay(d) {
+function nextWorkingDay(d, blockedSet = null) {
   const nxt = new Date(d.getTime());
   nxt.setDate(nxt.getDate() + 1);
-  while (!isWorkingDay(nxt)) {
+  while (!isWorkingDay(nxt, blockedSet)) {
     nxt.setDate(nxt.getDate() + 1);
   }
   return nxt;
 }
 
-function workingDaysDiff(dBase, dNew) {
+function workingDaysDiff(dBase, dNew, blockedSet = null) {
   const t1 = dBase.getTime();
   const t2 = dNew.getTime();
   if (t1 === t2) return 0;
@@ -315,7 +350,7 @@ function workingDaysDiff(dBase, dNew) {
   let count = 0;
   while (curr.getTime() !== t2) {
     curr.setDate(curr.getDate() + step);
-    if (isWorkingDay(curr)) count += step;
+    if (isWorkingDay(curr, blockedSet)) count += step;
   }
   return count;
 }
@@ -328,6 +363,8 @@ function computeLocalCascade(items) {
     anchor = nextWorkingDay(anchor);
   }
 
+  const vacSets = buildLocalVacationSets(allVacaciones);
+
   const byResp = {};
   items.forEach(it => {
     const resp = (it.Responsable || "Sin asignar").trim();
@@ -335,7 +372,13 @@ function computeLocalCascade(items) {
     byResp[resp].push(it);
   });
 
-  Object.values(byResp).forEach(rItems => {
+  Object.entries(byResp).forEach(([resp, rItems]) => {
+    const blocked = getBlockedSetForResp(resp, vacSets);
+    let respAnchor = new Date(anchor.getTime());
+    while (!isWorkingDay(respAnchor, blocked)) {
+      respAnchor = nextWorkingDay(respAnchor, blocked);
+    }
+
     rItems.forEach(it => {
       const regD = it.Fecha_Registro ? parseIsoDate(it.Fecha_Registro) : anchor;
       const solD = it.Fecha_Solicitud ? parseIsoDate(it.Fecha_Solicitud) : regD;
@@ -347,8 +390,8 @@ function computeLocalCascade(items) {
       const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
       if (it.Estado === "Terminado" || Number(it.Avance_Pct || 0) >= 100) {
         const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / effectiveHoursPerDay));
-        const doneD = addWorkingDays(regD, diasUsados);
-        const realD = extDays > 0 ? addWorkingDays(doneD, extDays) : doneD;
+        const doneD = addWorkingDays(regD, diasUsados, blocked);
+        const realD = extDays > 0 ? addWorkingDays(doneD, extDays, blocked) : doneD;
         it.Fecha_Inicio_Calc = formatIsoDate(regD);
         it.Fecha_Base = formatIsoDate(doneD);
         it.Fecha_Tentativa = formatIsoDate(doneD);
@@ -360,14 +403,14 @@ function computeLocalCascade(items) {
 
     const active = rItems.filter(it => it.Estado !== "Terminado" && Number(it.Avance_Pct || 0) < 100);
     const baseSorted = [...active].sort((a, b) => String(a.ID_Req).localeCompare(String(b.ID_Req)));
-    let cursorBase = new Date(anchor.getTime());
+    let cursorBase = new Date(respAnchor.getTime());
     const baseMap = {};
 
     baseSorted.forEach((it, idx) => {
       const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
       const dias = Math.max(1, Math.ceil(hRest / effectiveHoursPerDay));
-      const startD = idx === 0 ? cursorBase : nextWorkingDay(cursorBase);
-      const endD = addWorkingDays(startD, dias - 1);
+      const startD = idx === 0 ? cursorBase : nextWorkingDay(cursorBase, blocked);
+      const endD = addWorkingDays(startD, dias - 1, blocked);
       baseMap[it.ID_Req] = endD;
       cursorBase = endD;
     });
@@ -379,24 +422,24 @@ function computeLocalCascade(items) {
       return String(a.ID_Req).localeCompare(String(b.ID_Req));
     });
 
-    let cursorPrio = new Date(anchor.getTime());
+    let cursorPrio = new Date(respAnchor.getTime());
     prioSorted.forEach((it, idx) => {
       const hRest = Math.max(0, Number(it.Horas_Est || 0) * (1 - Number(it.Avance_Pct || 0) / 100));
       const dias = Math.max(1, Math.ceil(hRest / effectiveHoursPerDay));
-      const startD = idx === 0 ? cursorPrio : nextWorkingDay(cursorPrio);
-      const endD = addWorkingDays(startD, dias - 1);
+      const startD = idx === 0 ? cursorPrio : nextWorkingDay(cursorPrio, blocked);
+      const endD = addWorkingDays(startD, dias - 1, blocked);
       cursorPrio = endD;
 
       const dBase = baseMap[it.ID_Req];
       const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
       const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
-      const realEndD = extDays > 0 ? addWorkingDays(endD, extDays) : endD;
+      const realEndD = extDays > 0 ? addWorkingDays(endD, extDays, blocked) : endD;
       const solD = parseIsoDate(it.Fecha_Solicitud);
 
       it.Fecha_Inicio_Calc = formatIsoDate(startD);
       it.Fecha_Base = formatIsoDate(dBase);
       it.Fecha_Tentativa = formatIsoDate(endD);
-      it.Desplazamiento_Dias = workingDaysDiff(dBase, endD);
+      it.Desplazamiento_Dias = workingDaysDiff(dBase, endD, blocked);
       it.Fecha_Real_Entrega = formatIsoDate(realEndD);
       it.Dias_Desde_Solicitud = Math.max(0, workingDaysDiff(solD, anchor));
     });
@@ -603,7 +646,24 @@ function copyExecutiveReport() {
 function saveLocalBackup() {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allData));
+    localStorage.setItem(LOCAL_VAC_STORAGE_KEY, JSON.stringify(allVacaciones));
   } catch (e) {}
+}
+
+function loadLocalVacBackup() {
+  try {
+    const saved = localStorage.getItem(LOCAL_VAC_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function updateVacBadge() {
+  const badge = document.getElementById("vacCountBadge");
+  if (badge) badge.textContent = String(allVacaciones.length);
 }
 
 function loadLocalBackup() {
@@ -624,8 +684,13 @@ async function loadData(manualRefresh = false) {
     if (!res.ok) throw new Error("No backend");
     const json = await res.json();
     allData = json.requerimientos || [];
+    allVacaciones = json.vacaciones || [];
+    catalogResponsables = (json.catalogos && Array.isArray(json.catalogos.Responsables))
+      ? json.catalogos.Responsables
+      : [];
     computeLocalCascade(allData);
     saveLocalBackup();
+    updateVacBadge();
     isBackendConnected = true;
 
     const dot = document.getElementById("syncDot");
@@ -640,7 +705,9 @@ async function loadData(manualRefresh = false) {
     if (manualRefresh) showToast("Cronograma y datos sincronizados");
   } catch (err) {
     allData = loadLocalBackup();
+    allVacaciones = loadLocalVacBackup();
     computeLocalCascade(allData);
+    updateVacBadge();
     isBackendConnected = false;
     document.getElementById("syncDot").classList.add("offline");
     document.getElementById("syncText").textContent = "Guardado en navegador";
@@ -1503,12 +1570,15 @@ function renderGantt() {
     </th>`;
   }).join("");
 
+  const vacSets = buildLocalVacationSets(allVacaciones);
+
   const bodyRows = filteredData.map(r => {
     const solD = parseIsoDate(r.Fecha_Solicitud || r.Fecha_Registro);
     const sD = parseIsoDate(r.Fecha_Inicio_Calc || r.Fecha_Registro);
     const tD = parseIsoDate(r.Fecha_Tentativa);
     const rD = parseIsoDate(r.Fecha_Real_Entrega || r.Fecha_Tentativa);
     const isDone = r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100;
+    const respBlocked = getBlockedSetForResp(r.Responsable, vacSets);
 
     const cells = daysList.map(d => {
       const hol = getHolidayName(d);
@@ -1517,6 +1587,9 @@ function renderGantt() {
 
       if (isWknd || hol) {
         return `<td class="${cls}" title="${hol || "Fin de semana"}"></td>`;
+      }
+      if (respBlocked.has(formatIsoDate(d))) {
+        return `<td class="${cls}"><div class="gantt-bar-vac" title="Vacaciones / Descanso de ${escapeHtml(r.Responsable)}">VAC</div></td>`;
       }
       const t = d.getTime();
       if (t >= solD.getTime() && t < sD.getTime()) {
@@ -1549,6 +1622,7 @@ function renderGantt() {
       <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-steel);"></span> Ejecución Ingeniería</span>
       <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-ochre);"></span> Demora Externa</span>
       <span class="legend-item"><span class="legend-swatch" style="background:var(--tone-sage);"></span> Terminado</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:rgba(139,92,246,0.22); border:1px solid rgba(139,92,246,0.6);"></span> Vacaciones / Descanso (VAC)</span>
       <span class="legend-item"><span class="legend-swatch" style="background:var(--holiday-bg); border:1px solid var(--tone-terracotta);"></span> Festivo Colombia / Fin de semana</span>
     </div>
     <div class="gantt-grid-wrap">
@@ -2135,6 +2209,351 @@ async function deleteProc(idReq) {
   }
 }
 
+/* ==========================================================================
+   MÓDULO VISUAL DE VACACIONES Y DESCANSOS (+40 INTUITIVO)
+   ========================================================================== */
+const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const DAYS_ES_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function formatHumanDateEs(isoStr) {
+  if (!isoStr) return "—";
+  const d = parseIsoDate(isoStr);
+  return `${DAYS_ES_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_ES_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function countWorkingDaysInclusive(startIso, endIso) {
+  if (!startIso || !endIso) return 0;
+  const d1 = parseIsoDate(startIso);
+  const d2 = parseIsoDate(endIso);
+  if (d2.getTime() < d1.getTime()) return 0;
+  let curr = new Date(d1.getTime());
+  let count = 0;
+  let safety = 0;
+  while (curr.getTime() <= d2.getTime() && safety < 366) {
+    if (isWorkingDay(curr)) count++;
+    curr.setDate(curr.getDate() + 1);
+    safety++;
+  }
+  return count;
+}
+
+function getAllCollaborators() {
+  const set = new Set();
+  catalogResponsables.forEach(n => { if (n && n.trim()) set.add(n.trim()); });
+  allData.forEach(r => { if (r.Responsable && r.Responsable.trim()) set.add(r.Responsable.trim()); });
+  allVacaciones.forEach(v => {
+    const n = (v.Responsable || "").trim();
+    if (n && n.toLowerCase() !== ALL_TEAM_LABEL.toLowerCase()) set.add(n);
+  });
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+function openVacModal() {
+  const modal = document.getElementById("vacModal");
+  if (!modal) return;
+  const startInp = document.getElementById("vacStartInput");
+  const endInp = document.getElementById("vacEndInput");
+  if (!startInp.value) {
+    const today = todayIsoString();
+    startInp.value = today;
+    endInp.value = formatIsoDate(shiftDays(parseIsoDate(today), 6));
+  }
+  renderVacCollaboratorCards();
+  renderVacList();
+  updateVacImpactPreview();
+  modal.classList.add("open");
+}
+
+function closeVacModal() {
+  const modal = document.getElementById("vacModal");
+  if (modal) modal.classList.remove("open");
+}
+
+function renderVacCollaboratorCards() {
+  const grid = document.getElementById("vacCollabGrid");
+  if (!grid) return;
+  const collabs = getAllCollaborators();
+  const currentSelected = document.getElementById("vacSelectedResp").value;
+
+  const activeByResp = {};
+  let totalActive = 0;
+  allData.forEach(r => {
+    if (r.Estado !== "Terminado" && Number(r.Avance_Pct || 0) < 100) {
+      const k = (r.Responsable || "").trim();
+      activeByResp[k] = (activeByResp[k] || 0) + 1;
+      totalActive++;
+    }
+  });
+
+  if (!currentSelected && collabs.length > 0) {
+    document.getElementById("vacSelectedResp").value = collabs[0];
+  }
+  const activeSel = document.getElementById("vacSelectedResp").value;
+
+  const cardsHtml = collabs.map(name => {
+    const cnt = activeByResp[name] || 0;
+    const selCls = activeSel === name ? " selected" : "";
+    const metaText = cnt === 1 ? "1 entrega activa" : `${cnt} entregas activas`;
+    return `<button type="button" class="collab-card${selCls}" onclick="selectVacCollaborator('${escapeJsArg(name)}', false)">
+      <span class="collab-avatar">${escapeHtml(getInitials(name))}</span>
+      <span class="collab-info">
+        <div class="collab-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+        <div class="collab-meta">${metaText}</div>
+      </span>
+      <span class="collab-check" aria-hidden="true">✓</span>
+    </button>`;
+  }).join("");
+
+  const teamSelCls = activeSel === ALL_TEAM_LABEL ? " selected" : "";
+  const teamCard = `<button type="button" class="collab-card is-team${teamSelCls}" onclick="selectVacCollaborator('${escapeJsArg(ALL_TEAM_LABEL)}', false)">
+    <span class="collab-avatar">EQ</span>
+    <span class="collab-info">
+      <div class="collab-name">${ALL_TEAM_LABEL}</div>
+      <div class="collab-meta">Aplica a ${totalActive} activas</div>
+    </span>
+    <span class="collab-check" aria-hidden="true">✓</span>
+  </button>`;
+
+  const otherCard = `<button type="button" class="collab-card is-other" onclick="selectVacCollaborator('', true)">
+    <span class="collab-avatar">+</span>
+    <span class="collab-info">
+      <div class="collab-name">Otro colaborador</div>
+      <div class="collab-meta">Escribir nombre</div>
+    </span>
+    <span class="collab-check" aria-hidden="true">✓</span>
+  </button>`;
+
+  grid.innerHTML = cardsHtml + teamCard + otherCard;
+}
+
+function selectVacCollaborator(name, isCustom) {
+  const customWrap = document.getElementById("vacCustomRespWrap");
+  const customInp = document.getElementById("vacCustomRespInput");
+  if (isCustom) {
+    document.getElementById("vacSelectedResp").value = (customInp.value || "").trim();
+    customWrap.style.display = "block";
+    setTimeout(() => customInp.focus(), 40);
+  } else {
+    document.getElementById("vacSelectedResp").value = name;
+    customWrap.style.display = "none";
+    customInp.value = "";
+  }
+  renderVacCollaboratorCards();
+  if (isCustom) {
+    const otherBtn = document.querySelector(".collab-card.is-other");
+    if (otherBtn) otherBtn.classList.add("selected");
+  }
+  updateVacImpactPreview();
+}
+
+function onVacCustomRespInput(val) {
+  document.getElementById("vacSelectedResp").value = (val || "").trim();
+  updateVacImpactPreview();
+}
+
+function selectVacMotivo(motivo) {
+  document.getElementById("vacSelectedMotivo").value = motivo;
+  document.querySelectorAll(".motivo-chip").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-motivo") === motivo);
+  });
+  updateVacImpactPreview();
+}
+
+function applyVacDurationPreset(calendarDays) {
+  const startInp = document.getElementById("vacStartInput");
+  const endInp = document.getElementById("vacEndInput");
+  const base = startInp.value ? parseIsoDate(startInp.value) : parseIsoDate(todayIsoString());
+  if (!startInp.value) startInp.value = formatIsoDate(base);
+  const endD = shiftDays(base, Math.max(0, calendarDays - 1));
+  endInp.value = formatIsoDate(endD);
+  updateVacImpactPreview();
+}
+
+function updateVacImpactPreview() {
+  const box = document.getElementById("vacPreviewBox");
+  if (!box) return;
+  const resp = (document.getElementById("vacSelectedResp").value || "").trim();
+  const sIso = document.getElementById("vacStartInput").value;
+  const eIso = document.getElementById("vacEndInput").value;
+  const motivo = document.getElementById("vacSelectedMotivo").value || "Vacaciones";
+
+  if (!resp) {
+    box.innerHTML = "Selecciona un <strong>colaborador</strong> arriba para calcular el impacto en su cronograma.";
+    return;
+  }
+  if (!sIso || !eIso) {
+    box.innerHTML = "Elige las fechas <strong>Desde</strong> y <strong>Hasta</strong> para ver cuántos días hábiles se protegerán.";
+    return;
+  }
+  if (eIso < sIso) {
+    box.innerHTML = `<span style="color:var(--tone-terracotta); font-weight:600;">La fecha 'Hasta' no puede ser anterior a 'Desde'.</span>`;
+    return;
+  }
+
+  const workDays = countWorkingDaysInclusive(sIso, eIso);
+  const isAll = resp.toLowerCase() === ALL_TEAM_LABEL.toLowerCase();
+  const affected = allData.filter(r => {
+    const active = r.Estado !== "Terminado" && Number(r.Avance_Pct || 0) < 100;
+    if (!active) return false;
+    return isAll || String(r.Responsable || "").trim().toLowerCase() === resp.toLowerCase();
+  }).length;
+
+  box.innerHTML = `
+    <div><strong>${escapeHtml(resp)}</strong> · ${escapeHtml(motivo)}</div>
+    <div>Del <strong>${escapeHtml(formatHumanDateEs(sIso))}</strong> al <strong>${escapeHtml(formatHumanDateEs(eIso))}</strong> · <span class="pill-tag tag-steel tabular">${workDays} día(s) hábiles</span></div>
+    <div style="color:var(--ink-secondary); margin-top:3px;">
+      ${affected > 0
+        ? `Las <strong>${affected} entrega(s) activa(s)</strong> se correrán automáticamente sin descontar días de proyecto.`
+        : "No hay entregas activas asignadas en este momento, pero el calendario quedará protegido."}
+    </div>
+  `;
+}
+
+function renderVacList() {
+  const container = document.getElementById("vacListContainer");
+  if (!container) return;
+  if (!allVacaciones.length) {
+    container.innerHTML = `<div class="proc-sub" style="padding:14px; text-align:center; background:var(--bg-canvas); border-radius:var(--radius-sm); border:1px dashed var(--border-strong);">
+      No hay vacaciones ni descansos programados todavía.
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = allVacaciones.map(v => {
+    const isAll = String(v.Responsable || "").trim().toLowerCase() === ALL_TEAM_LABEL.toLowerCase();
+    const workDays = countWorkingDaysInclusive(v.Fecha_Inicio, v.Fecha_Fin);
+    const delBtn = isUnlocked
+      ? `<button type="button" class="icon-btn danger" onclick="deleteVacacion('${escapeJsArg(v.ID_Vac)}')">Eliminar</button>`
+      : "";
+    return `<div class="vac-item-card">
+      <div class="vac-item-left">
+        <span class="collab-avatar" style="background:${isAll ? "var(--tone-sage)" : "var(--accent-primary)"};">${isAll ? "EQ" : escapeHtml(getInitials(v.Responsable))}</span>
+        <div>
+          <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+            <strong>${escapeHtml(v.Responsable)}</strong>
+            <span class="pill-tag tag-cat-req">${escapeHtml(v.Motivo || "Vacaciones")}</span>
+            <span class="pill-tag tag-steel tabular">${workDays}d hábiles</span>
+          </div>
+          <div class="vac-item-dates">${escapeHtml(formatHumanDateEs(v.Fecha_Inicio))} → ${escapeHtml(formatHumanDateEs(v.Fecha_Fin))}</div>
+        </div>
+      </div>
+      ${delBtn}
+    </div>`;
+  }).join("");
+}
+
+async function submitVacModal(e) {
+  e.preventDefault();
+  if (!isUnlocked) return toggleAdminLock();
+  const resp = (document.getElementById("vacSelectedResp").value || "").trim();
+  const sIso = document.getElementById("vacStartInput").value;
+  const eIso = document.getElementById("vacEndInput").value;
+  const motivo = document.getElementById("vacSelectedMotivo").value || "Vacaciones";
+
+  if (!resp) {
+    showToast("Selecciona un colaborador primero", true);
+    return;
+  }
+  if (!sIso || !eIso || eIso < sIso) {
+    showToast("Revisa que las fechas Desde y Hasta sean válidas", true);
+    return;
+  }
+
+  const prevDates = snapshotDates();
+
+  if (!isBackendConnected) {
+    const newId = `VAC-${String(allVacaciones.length + 1).padStart(3, "0")}`;
+    allVacaciones.push({ ID_Vac: newId, Responsable: resp, Fecha_Inicio: sIso, Fecha_Fin: eIso, Motivo: motivo });
+    allVacaciones.sort((a, b) => a.Fecha_Inicio.localeCompare(b.Fecha_Inicio));
+    computeLocalCascade(allData);
+    saveLocalBackup();
+    updateVacBadge();
+    detectShiftedRows(prevDates);
+    renderVacList();
+    applyFilters();
+    showToast(`Vacaciones de ${resp} guardadas en navegador`, true);
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/vacaciones", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        Responsable: resp,
+        Fecha_Inicio: sIso,
+        Fecha_Fin: eIso,
+        Motivo: motivo
+      })
+    });
+    if (res.status === 401) {
+      closeVacModal();
+      return handleUnauthorized();
+    }
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || "No se pudo guardar las vacaciones", true);
+      return;
+    }
+    allVacaciones = data.vacaciones || allVacaciones;
+    allData = data.requerimientos || allData;
+    computeLocalCascade(allData);
+    saveLocalBackup();
+    updateVacBadge();
+    detectShiftedRows(prevDates);
+    renderVacList();
+    applyFilters();
+    showToast(`Vacaciones de ${resp} guardadas y entregas recalculadas`);
+  } catch (err) {
+    showToast("Error de conexión al guardar vacaciones", true);
+  }
+}
+
+async function deleteVacacion(idVac) {
+  if (!isUnlocked) return toggleAdminLock();
+  if (!confirm("¿Eliminar este periodo de vacaciones y recalcular el cronograma?")) return;
+
+  const prevDates = snapshotDates();
+  if (!isBackendConnected) {
+    allVacaciones = allVacaciones.filter(v => v.ID_Vac !== idVac);
+    computeLocalCascade(allData);
+    saveLocalBackup();
+    updateVacBadge();
+    detectShiftedRows(prevDates);
+    renderVacList();
+    applyFilters();
+    showToast("Periodo eliminado en navegador", true);
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/vacaciones/${idVac}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (res.status === 401) {
+      closeVacModal();
+      return handleUnauthorized();
+    }
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || "No se pudo eliminar", true);
+      return;
+    }
+    allVacaciones = data.vacaciones || [];
+    allData = data.requerimientos || allData;
+    computeLocalCascade(allData);
+    saveLocalBackup();
+    updateVacBadge();
+    detectShiftedRows(prevDates);
+    renderVacList();
+    applyFilters();
+    showToast("Vacaciones eliminadas y fechas recalculadas");
+  } catch (err) {
+    showToast("Error de conexión al eliminar vacaciones", true);
+  }
+}
+
 document.addEventListener("click", e => {
   const wrap = document.querySelector(".more-menu-wrap");
   if (wrap && !wrap.contains(e.target)) closeMoreMenu();
@@ -2147,6 +2566,7 @@ window.addEventListener("keydown", e => {
     document.getElementById("searchInput").focus();
   } else if (e.key === "Escape") {
     closeMoreMenu();
+    closeVacModal();
     closeAuthModal();
     closeMicroModal();
     closeDelayModal();

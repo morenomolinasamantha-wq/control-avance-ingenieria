@@ -136,6 +136,17 @@ class RequerimientoInput(BaseModel):
     Cantidad_Ediciones: int = Field(default=0, ge=0)
 
 
+VAC_HEADERS = ["ID_Vac", "Responsable", "Fecha_Inicio", "Fecha_Fin", "Motivo"]
+ALL_TEAM_LABEL = "Todo el equipo"
+
+
+class VacacionInput(BaseModel):
+    Responsable: str
+    Fecha_Inicio: str
+    Fecha_Fin: str
+    Motivo: Optional[str] = "Vacaciones"
+
+
 class ProgressPatchInput(BaseModel):
     Estado: Optional[str] = None
     Avance_Pct: Optional[float] = Field(default=None, ge=0, le=100)
@@ -303,32 +314,34 @@ def get_colombia_holidays(year: int) -> dict[date, str]:
     return _HOLIDAY_CACHE[year]
 
 
-def is_working_day(d: date) -> bool:
+def is_working_day(d: date, blocked_dates: Optional[set[date]] = None) -> bool:
     if d.weekday() >= 5:
         return False
     if d in get_colombia_holidays(d.year):
         return False
+    if blocked_dates and d in blocked_dates:
+        return False
     return True
 
 
-def add_working_days(start_date: date, working_days: int) -> date:
+def add_working_days(start_date: date, working_days: int, blocked_dates: Optional[set[date]] = None) -> date:
     current = start_date
     added = 0
     while added < working_days:
         current += timedelta(days=1)
-        if is_working_day(current):
+        if is_working_day(current, blocked_dates):
             added += 1
     return current
 
 
-def next_working_day(d: date) -> date:
+def next_working_day(d: date, blocked_dates: Optional[set[date]] = None) -> date:
     nxt = d + timedelta(days=1)
-    while not is_working_day(nxt):
+    while not is_working_day(nxt, blocked_dates):
         nxt += timedelta(days=1)
     return nxt
 
 
-def working_days_diff(d_base: date, d_new: date) -> int:
+def working_days_diff(d_base: date, d_new: date, blocked_dates: Optional[set[date]] = None) -> int:
     if d_base == d_new:
         return 0
     step = 1 if d_new > d_base else -1
@@ -336,9 +349,41 @@ def working_days_diff(d_base: date, d_new: date) -> int:
     count = 0
     while curr != d_new:
         curr += timedelta(days=step)
-        if is_working_day(curr):
+        if is_working_day(curr, blocked_dates):
             count += step
     return count
+
+
+def build_vacation_sets(vacaciones: Optional[list[dict]]) -> tuple[set[date], dict[str, set[date]]]:
+    global_blocked: set[date] = set()
+    by_resp: dict[str, set[date]] = {}
+    if not vacaciones:
+        return global_blocked, by_resp
+
+    for v in vacaciones:
+        resp = str(v.get("Responsable") or "").strip()
+        if not resp:
+            continue
+        start_s = str(v.get("Fecha_Inicio") or "").strip()[:10]
+        end_s = str(v.get("Fecha_Fin") or "").strip()[:10]
+        try:
+            d1 = date.fromisoformat(start_s)
+            d2 = date.fromisoformat(end_s)
+        except ValueError:
+            continue
+        if d2 < d1:
+            d1, d2 = d2, d1
+        # Limite de seguridad de 365 dias por rango
+        if (d2 - d1).days > 365:
+            d2 = d1 + timedelta(days=365)
+
+        is_all = resp.lower() in (ALL_TEAM_LABEL.lower(), "todos", "__all__")
+        target_set = global_blocked if is_all else by_resp.setdefault(resp.lower(), set())
+        curr = d1
+        while curr <= d2:
+            target_set.add(curr)
+            curr += timedelta(days=1)
+    return global_blocked, by_resp
 
 
 def safe_iso_date(val, fallback: date) -> date:
@@ -351,11 +396,17 @@ def safe_iso_date(val, fallback: date) -> date:
         return fallback
 
 
-def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = None) -> list[dict]:
+def compute_cascade_schedule(
+    items: list[dict],
+    anchor_date: Optional[date] = None,
+    vacaciones: Optional[list[dict]] = None
+) -> list[dict]:
     if anchor_date is None:
         anchor_date = date.today()
     while not is_working_day(anchor_date):
         anchor_date = next_working_day(anchor_date)
+
+    global_vac, resp_vacs = build_vacation_sets(vacaciones)
 
     by_resp: dict[str, list[dict]] = {}
     for item in items:
@@ -363,6 +414,11 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
         by_resp.setdefault(resp, []).append(item)
 
     for resp, r_items in by_resp.items():
+        blocked = global_vac | resp_vacs.get(resp.lower(), set())
+        resp_anchor = anchor_date
+        while not is_working_day(resp_anchor, blocked):
+            resp_anchor = next_working_day(resp_anchor, blocked)
+
         for it in r_items:
             reg_d = safe_iso_date(it.get("Fecha_Registro"), anchor_date)
             sol_d = safe_iso_date(it.get("Fecha_Solicitud"), reg_d)
@@ -374,8 +430,8 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
             if str(it.get("Estado", "")).strip() == "Terminado" or float(it.get("Avance_Pct", 0)) >= 100:
                 dias_usados = max(1, math.ceil(float(it.get("Horas_Reales") or it.get("Horas_Est") or 8) / HORAS_POR_DIA))
-                done_d = add_working_days(reg_d, dias_usados)
-                real_d = add_working_days(done_d, ext_days) if ext_days > 0 else done_d
+                done_d = add_working_days(reg_d, dias_usados, blocked)
+                real_d = add_working_days(done_d, ext_days, blocked) if ext_days > 0 else done_d
                 it["Fecha_Base"] = done_d.isoformat()
                 it["Fecha_Tentativa"] = done_d.isoformat()
                 it["Desplazamiento_Dias"] = 0
@@ -388,15 +444,15 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
         ]
 
         base_sorted = sorted(active_items, key=lambda x: str(x.get("ID_Req", "")))
-        cursor_base = anchor_date
+        cursor_base = resp_anchor
         base_dates_map: dict[str, date] = {}
         for idx, it in enumerate(base_sorted):
             h_est = float(it.get("Horas_Est") or 0)
             pct = float(it.get("Avance_Pct") or 0)
             h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
             dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
-            start_d = cursor_base if idx == 0 else next_working_day(cursor_base)
-            end_d = add_working_days(start_d, dias - 1)
+            start_d = cursor_base if idx == 0 else next_working_day(cursor_base, blocked)
+            end_d = add_working_days(start_d, dias - 1, blocked)
             base_dates_map[str(it["ID_Req"])] = end_d
             cursor_base = end_d
 
@@ -404,25 +460,25 @@ def compute_cascade_schedule(items: list[dict], anchor_date: Optional[date] = No
             active_items,
             key=lambda x: (str(x.get("Prioridad") or "3 - Normal"), str(x.get("ID_Req", "")))
         )
-        cursor_prio = anchor_date
+        cursor_prio = resp_anchor
         for idx, it in enumerate(prio_sorted):
             h_est = float(it.get("Horas_Est") or 0)
             pct = float(it.get("Avance_Pct") or 0)
             h_rest = max(0.0, h_est * (1.0 - pct / 100.0))
             dias = max(1, math.ceil(h_rest / HORAS_POR_DIA))
-            start_d = cursor_prio if idx == 0 else next_working_day(cursor_prio)
-            end_d = add_working_days(start_d, dias - 1)
+            start_d = cursor_prio if idx == 0 else next_working_day(cursor_prio, blocked)
+            end_d = add_working_days(start_d, dias - 1, blocked)
             cursor_prio = end_d
 
             d_base = base_dates_map[str(it["ID_Req"])]
             ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
-            real_end_d = add_working_days(end_d, ext_days) if ext_days > 0 else end_d
+            real_end_d = add_working_days(end_d, ext_days, blocked) if ext_days > 0 else end_d
             sol_d = safe_iso_date(it.get("Fecha_Solicitud"), anchor_date)
 
             it["Fecha_Base"] = d_base.isoformat()
             it["Fecha_Tentativa"] = end_d.isoformat()
-            it["Desplazamiento_Dias"] = working_days_diff(d_base, end_d)
+            it["Desplazamiento_Dias"] = working_days_diff(d_base, end_d, blocked)
             it["Fecha_Real_Entrega"] = real_end_d.isoformat()
             it["Dias_Desde_Solicitud"] = max(0, working_days_diff(sol_d, anchor_date))
 
@@ -516,7 +572,7 @@ def ensure_excel_exists():
             d.setdefault("Cantidad_Ediciones", 0)
             d["Categoria"] = "Requerimiento" if str(d.get("Categoria") or "").strip().lower().startswith("req") else "Proyecto"
             items.append(d)
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         for idx, it in enumerate(items, start=2):
             ws.append([it.get(h, "") for h in HEADERS])
             style_row(ws, idx)
@@ -602,6 +658,42 @@ def write_items_to_ws(ws, items: list[dict]):
         style_row(ws, idx)
 
 
+def read_vacaciones_from_wb(wb) -> list[dict]:
+    if "Vacaciones" not in wb.sheetnames:
+        return []
+    ws_vac = wb["Vacaciones"]
+    rows = list(ws_vac.iter_rows(values_only=True))
+    if len(rows) <= 1:
+        return []
+    headers = [str(h).strip() if h else f"Col_{i}" for i, h in enumerate(rows[0])]
+    vacs = []
+    for r in rows[1:]:
+        if not any(r):
+            continue
+        v = dict(zip(headers, r))
+        vacs.append({
+            "ID_Vac": str(v.get("ID_Vac") or "").strip(),
+            "Responsable": str(v.get("Responsable") or "").strip(),
+            "Fecha_Inicio": str(v.get("Fecha_Inicio") or "").strip()[:10],
+            "Fecha_Fin": str(v.get("Fecha_Fin") or "").strip()[:10],
+            "Motivo": str(v.get("Motivo") or "Vacaciones").strip(),
+        })
+    vacs.sort(key=lambda x: (x["Fecha_Inicio"], x["Responsable"]))
+    return vacs
+
+
+def write_vacaciones_to_wb(wb, vacs: list[dict]):
+    if "Vacaciones" not in wb.sheetnames:
+        ws_vac = wb.create_sheet(title="Vacaciones")
+        ws_vac.append(VAC_HEADERS)
+    else:
+        ws_vac = wb["Vacaciones"]
+        ws_vac.delete_rows(1, ws_vac.max_row)
+        ws_vac.append(VAC_HEADERS)
+    for v in vacs:
+        ws_vac.append([v.get(h, "") for h in VAC_HEADERS])
+
+
 def get_file_metadata():
     if not EXCEL_FILE.exists():
         return {
@@ -680,8 +772,9 @@ def get_all_data(pull: bool = False):
         ws = wb["Requerimientos"]
 
         items = read_items_from_ws(ws)
+        vacaciones = read_vacaciones_from_wb(wb)
         before_sig = _items_signature(items)
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=vacaciones)
         if _items_signature(items) != before_sig:
             write_items_to_ws(ws, items)
             try:
@@ -709,6 +802,7 @@ def get_all_data(pull: bool = False):
         wb.close()
         return {
             "requerimientos": items,
+            "vacaciones": vacaciones,
             "catalogos": catalogos,
             "file_info": get_file_metadata()
         }
@@ -774,7 +868,7 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
             "Cantidad_Ediciones": max(0, int(payload.Cantidad_Ediciones or 0))
         })
 
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -841,7 +935,7 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
             "Cantidad_Ediciones": max(0, int(payload.Cantidad_Ediciones or 0))
         })
 
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -885,7 +979,7 @@ def patch_sumar_ediciones(id_req: str, payload: MicroEditBatchInput, _auth: bool
             entry = f"[{stamp}: +{cant_add} ed. / +{int(mins_add)} min] {nota_clean}"
             target["Detalle"] = f"{prev_detail} | {entry}".strip(" |")
 
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -929,7 +1023,7 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput, _auth
         if payload.Horas_Reales is not None:
             target["Horas_Reales"] = round(float(payload.Horas_Reales), 2)
 
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -958,7 +1052,7 @@ def patch_prioridad_requerimiento(id_req: str, payload: PriorityPatchInput, _aut
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
         target["Prioridad"] = payload.Prioridad.strip()
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -991,7 +1085,7 @@ def patch_demora_externa(id_req: str, payload: ExternalDelayPatchInput, _auth: b
         target["Horas_Demora_Externa"] = max(0.0, float(payload.Horas_Demora_Externa or 0))
         target["Comentarios_Externos"] = (payload.Comentarios_Externos or "").strip()
 
-        compute_cascade_schedule(items)
+        compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -1020,7 +1114,7 @@ def delete_requerimiento(id_req: str, _auth: bool = Depends(verify_admin_pin)):
             wb.close()
             raise HTTPException(status_code=404, detail=f"No se encontró el requerimiento {id_req}")
 
-        compute_cascade_schedule(new_items)
+        compute_cascade_schedule(new_items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, new_items)
         save_workbook_safe(wb, sync_cloud=True)
         wb.close()
@@ -1029,6 +1123,104 @@ def delete_requerimiento(id_req: str, _auth: bool = Depends(verify_admin_pin)):
             "requerimientos": new_items,
             "file_info": get_file_metadata(),
             "message": f"Requerimiento {id_req} eliminado permanentemente"
+        }
+
+
+@app.get("/api/vacaciones")
+def get_vacaciones():
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        vacs = read_vacaciones_from_wb(wb)
+        wb.close()
+        return {"vacaciones": vacs}
+
+
+@app.post("/api/vacaciones")
+def create_vacacion(payload: VacacionInput, _auth: bool = Depends(verify_admin_pin)):
+    resp = (payload.Responsable or "").strip()
+    if not resp:
+        raise HTTPException(status_code=422, detail="Selecciona un colaborador.")
+    try:
+        d1 = date.fromisoformat(payload.Fecha_Inicio.strip()[:10])
+        d2 = date.fromisoformat(payload.Fecha_Fin.strip()[:10])
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Formato de fecha inválido (usa YYYY-MM-DD).")
+    if d2 < d1:
+        raise HTTPException(status_code=422, detail="La fecha de fin no puede ser anterior a la fecha de inicio.")
+
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
+        vacs = read_vacaciones_from_wb(wb)
+
+        existing_ids = {v["ID_Vac"] for v in vacs}
+        max_n = 0
+        for v in vacs:
+            if "-" in v["ID_Vac"]:
+                try:
+                    max_n = max(max_n, int(v["ID_Vac"].split("-")[-1]))
+                except ValueError:
+                    pass
+        nxt = max_n + 1
+        new_id = f"VAC-{nxt:03d}"
+        while new_id in existing_ids:
+            nxt += 1
+            new_id = f"VAC-{nxt:03d}"
+
+        vacs.append({
+            "ID_Vac": new_id,
+            "Responsable": resp,
+            "Fecha_Inicio": d1.isoformat(),
+            "Fecha_Fin": d2.isoformat(),
+            "Motivo": (payload.Motivo or "Vacaciones").strip() or "Vacaciones",
+        })
+        vacs.sort(key=lambda x: (x["Fecha_Inicio"], x["Responsable"]))
+
+        write_vacaciones_to_wb(wb, vacs)
+        compute_cascade_schedule(items, vacaciones=vacs)
+        write_items_to_ws(ws, items)
+        save_workbook_safe(wb, sync_cloud=True)
+        wb.close()
+
+        return {
+            "status": "ok",
+            "ID_Vac": new_id,
+            "vacaciones": vacs,
+            "requerimientos": items,
+            "file_info": get_file_metadata(),
+            "message": "Vacaciones guardadas y cronograma recalculado"
+        }
+
+
+@app.delete("/api/vacaciones/{id_vac}")
+def delete_vacacion(id_vac: str, _auth: bool = Depends(verify_admin_pin)):
+    with excel_lock:
+        ensure_excel_exists()
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        ws = wb["Requerimientos"]
+        items = read_items_from_ws(ws)
+        vacs = read_vacaciones_from_wb(wb)
+
+        new_vacs = [v for v in vacs if v["ID_Vac"].strip() != id_vac.strip()]
+        if len(new_vacs) == len(vacs):
+            wb.close()
+            raise HTTPException(status_code=404, detail=f"No se encontró el registro {id_vac}")
+
+        write_vacaciones_to_wb(wb, new_vacs)
+        compute_cascade_schedule(items, vacaciones=new_vacs)
+        write_items_to_ws(ws, items)
+        save_workbook_safe(wb, sync_cloud=True)
+        wb.close()
+
+        return {
+            "status": "ok",
+            "vacaciones": new_vacs,
+            "requerimientos": items,
+            "file_info": get_file_metadata(),
+            "message": f"Registro {id_vac} eliminado y cronograma recalculado"
         }
 
 

@@ -54,6 +54,9 @@
             ⋯ Más
           </button>
           <div class="dropdown-menu" id="moreMenuDropdown" role="menu">
+            <button type="button" class="dropdown-item" role="menuitem" onclick="openVacModal(); closeMoreMenu();">
+              <span>Vacaciones y descansos</span>
+            </button>
             <button type="button" class="dropdown-item" role="menuitem" onclick="copyExecutiveReport(); closeMoreMenu();">
               <span>Copiar reporte ejecutivo</span>
             </button>
@@ -292,9 +295,14 @@
         <div class="workbench-header">
           <div>
             <h2 class="card-title">Línea de Tiempo de Entregas (Calendario Colombia)</h2>
-            <p class="card-desc">Visualiza esperas desde solicitud, ejecución de ingeniería, demoras externas y días festivos</p>
+            <p class="card-desc">Visualiza esperas desde solicitud, ejecución de ingeniería, vacaciones, demoras externas y festivos</p>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="setMainTab('entregables')">Ajustar filtros</button>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="openVacBtn" onclick="openVacModal()">
+              Vacaciones <span class="nav-badge tabular" id="vacCountBadge" style="background:rgba(255,255,255,0.22); color:#fff;">0</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="setMainTab('entregables')">Ajustar filtros</button>
+          </div>
         </div>
         <div class="gantt-container active" id="ganttViewContainer"></div>
       </section>
@@ -428,6 +436,91 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: MÓDULO VISUAL DE VACACIONES Y AUSENCIAS (+40 INTUITIVO) -->
+  <div class="modal-backdrop" id="vacModal" onclick="if(event.target===this) closeVacModal()">
+    <div class="modal-card vac-modal-card">
+      <div class="drawer-top">
+        <div>
+          <h2>Vacaciones y Descansos</h2>
+          <p class="section-sub">Los días programados no consumen tiempo de proyectos; las entregas se ajustan solas</p>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="closeVacModal()">Cerrar</button>
+      </div>
+
+      <div class="vac-modal-body">
+        <!-- AVISO EN MODO SOLO LECTURA -->
+        <div class="readonly-banner" id="vacReadonlyNotice" style="margin-bottom:4px;">
+          <div class="readonly-banner-text">
+            <strong>Modo consulta:</strong> puedes ver los descansos programados. Activa edición para agregar o quitar fechas.
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeVacModal(); toggleAdminLock();">Activar edición</button>
+        </div>
+
+        <!-- FORMULARIO VISUAL EN 2 PASOS (VISIBLE EN MODO EDICIÓN) -->
+        <form id="vacForm" class="vac-form" onsubmit="submitVacModal(event)">
+          <input type="hidden" id="vacSelectedResp" value="" />
+          <input type="hidden" id="vacSelectedMotivo" value="Vacaciones" />
+
+          <!-- PASO 1: SELECTOR VISUAL DE COLABORADOR CON TARJETAS Y AVATAR -->
+          <div class="vac-step">
+            <div class="vac-step-title">1. ¿Quién toma descanso? <span class="vac-step-hint">(Toca una tarjeta)</span></div>
+            <div class="collab-picker-grid" id="vacCollabGrid"></div>
+            <div id="vacCustomRespWrap" style="display:none; margin-top:10px;">
+              <input type="text" id="vacCustomRespInput" class="input-clean" style="width:100%;" placeholder="Escribe el nombre completo del colaborador..." oninput="onVacCustomRespInput(this.value)" />
+            </div>
+          </div>
+
+          <!-- PASO 2: FECHAS + ATAJOS DE DURACIÓN + MOTIVO -->
+          <div class="vac-step">
+            <div class="vac-step-title">2. Selecciona las fechas en el calendario</div>
+            <div class="form-grid" style="margin-top:8px;">
+              <div class="field">
+                <label for="vacStartInput">Desde (primer día libre) *</label>
+                <input type="date" id="vacStartInput" required onchange="updateVacImpactPreview()" />
+              </div>
+              <div class="field">
+                <label for="vacEndInput">Hasta (último día libre) *</label>
+                <input type="date" id="vacEndInput" required onchange="updateVacImpactPreview()" />
+              </div>
+            </div>
+
+            <div class="chip-row" style="margin-top:10px;">
+              <span class="vac-chip-label">Duración rápida:</span>
+              <button type="button" class="preset-chip" onclick="applyVacDurationPreset(1)">1 día</button>
+              <button type="button" class="preset-chip" onclick="applyVacDurationPreset(3)">3 días</button>
+              <button type="button" class="preset-chip" onclick="applyVacDurationPreset(7)">1 semana</button>
+              <button type="button" class="preset-chip" onclick="applyVacDurationPreset(14)">2 semanas</button>
+              <button type="button" class="preset-chip" onclick="applyVacDurationPreset(15)">15 días</button>
+            </div>
+
+            <div class="chip-row" style="margin-top:10px;">
+              <span class="vac-chip-label">Motivo:</span>
+              <button type="button" class="motivo-chip active" data-motivo="Vacaciones" onclick="selectVacMotivo('Vacaciones')">Vacaciones</button>
+              <button type="button" class="motivo-chip" data-motivo="Permiso" onclick="selectVacMotivo('Permiso')">Permiso</button>
+              <button type="button" class="motivo-chip" data-motivo="Incapacidad" onclick="selectVacMotivo('Incapacidad')">Incapacidad</button>
+              <button type="button" class="motivo-chip" data-motivo="Cierre de empresa" onclick="selectVacMotivo('Cierre de empresa')">Cierre empresa</button>
+            </div>
+
+            <!-- VISTA PREVIA EN VIVO DEL IMPACTO -->
+            <div class="vac-preview-box" id="vacPreviewBox">
+              Selecciona un colaborador y las fechas para ver el impacto en el cronograma.
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+              <button type="submit" class="btn btn-primary">Guardar vacaciones y recalcular</button>
+            </div>
+          </div>
+        </form>
+
+        <!-- LISTADO DE VACACIONES PROGRAMADAS -->
+        <div class="vac-list-section">
+          <div class="vac-step-title">Descansos programados</div>
+          <div class="vac-list" id="vacListContainer"></div>
+        </div>
+      </div>
     </div>
   </div>
 

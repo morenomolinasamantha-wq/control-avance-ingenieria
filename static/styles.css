@@ -2215,3 +2215,246 @@ body:not(.is-locked) .readonly-banner {
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* ==========================================================================
+   13. MÓDULO VISUAL DE VACACIONES (+40 INTUITIVO) Y BARRA VAC EN GANTT
+   ========================================================================== */
+.vac-modal-card {
+  width: 680px;
+  max-width: 100%;
+  max-height: 90vh;
+  padding: 22px 24px;
+  overflow: hidden;
+}
+
+.vac-modal-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-right: 4px;
+}
+
+body.is-locked .vac-form {
+  display: none;
+}
+
+body:not(.is-locked) #vacReadonlyNotice {
+  display: none;
+}
+
+.vac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vac-step {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.vac-step-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-bottom: 10px;
+}
+
+.vac-step-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+.collab-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 10px;
+}
+
+.collab-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.collab-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.collab-card.selected {
+  border-color: var(--accent-primary);
+  background: var(--tone-steel-soft);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.collab-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.collab-card.is-team .collab-avatar {
+  background: var(--tone-sage);
+}
+
+.collab-card.is-other .collab-avatar {
+  background: var(--bg-elevated);
+  color: var(--ink-secondary);
+  border: 1px dashed var(--border-strong);
+}
+
+.collab-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.collab-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collab-meta {
+  font-size: 0.74rem;
+  color: var(--ink-secondary);
+  margin-top: 1px;
+}
+
+.collab-check {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  opacity: 0;
+}
+
+.collab-card.selected .collab-check {
+  opacity: 1;
+}
+
+.vac-chip-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  align-self: center;
+  margin-right: 4px;
+}
+
+.motivo-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--ink-secondary);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.motivo-chip:hover {
+  color: var(--ink-primary);
+  border-color: var(--accent-primary);
+}
+
+.motivo-chip.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+.vac-preview-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--accent-primary);
+  font-size: 0.84rem;
+  color: var(--ink-primary);
+  line-height: 1.5;
+}
+
+.vac-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vac-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-hairline);
+}
+
+.vac-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.vac-item-dates {
+  font-size: 0.83rem;
+  color: var(--ink-primary);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.gantt-bar-vac {
+  height: 18px;
+  border-radius: 5px;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.55);
+  color: #7C3AED;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+[data-theme="graphite"] .gantt-bar-vac {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: rgba(167, 139, 250, 0.55);
+  color: #C4B5FD;
+}
