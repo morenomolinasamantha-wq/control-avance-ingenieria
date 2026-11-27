@@ -534,9 +534,9 @@ def ensure_excel_exists():
         ws_cat = wb.create_sheet(title="Catalogos")
         ws_cat.append(["Proyectos", "Solicitantes", "Responsables", "Tipos", "Estados", "Prioridades"])
         ws_cat.append(["T-LAB", "Calidad", "Samantha Moreno", "Funcionalidad Nueva", "Pendiente", "1 - Urgente"])
-        ws_cat.append(["CRONOGRAMA", "Ingenieria", "Carlos Ramírez", "Mejora", "En Desarrollo", "2 - Alta"])
-        ws_cat.append(["Catálogo Válvulas", "Laboratorio", "Andrés Gómez", "Corrección", "Terminado", "3 - Normal"])
-        ws_cat.append(["Portal Corporativo", "Comercial", "Luisa Fernanda Ortiz", "Soporte", "Pausado", "4 - Baja"])
+        ws_cat.append(["CRONOGRAMA", "Ingenieria", "", "Mejora", "En Desarrollo", "2 - Alta"])
+        ws_cat.append(["", "Laboratorio", "", "Corrección", "Terminado", "3 - Normal"])
+        ws_cat.append(["", "Comercial", "", "Soporte", "Pausado", "4 - Baja"])
         today_year = date.today().year
         _populate_holidays_sheet(wb, (today_year, today_year + 1))
         wb.save(EXCEL_FILE)

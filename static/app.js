@@ -2239,7 +2239,6 @@ function countWorkingDaysInclusive(startIso, endIso) {
 
 function getAllCollaborators() {
   const set = new Set();
-  catalogResponsables.forEach(n => { if (n && n.trim()) set.add(n.trim()); });
   allData.forEach(r => { if (r.Responsable && r.Responsable.trim()) set.add(r.Responsable.trim()); });
   allVacaciones.forEach(v => {
     const n = (v.Responsable || "").trim();
