@@ -54,12 +54,14 @@ function escapeJsArg(value) {
    ========================================================================== */
 function setMainTab(tab) {
   activeMainTab = tab;
+  closeAllRowMenus();
   document.querySelectorAll(".tab-panel").forEach(p => {
     p.classList.toggle("active", p.getAttribute("data-panel") === tab);
   });
   document.querySelectorAll(".nav-tab, .mobile-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
   });
+  window.scrollTo({ top: 0, behavior: "smooth" });
   if (tab === "resumen") {
     setTimeout(() => {
       renderCharts();
@@ -71,6 +73,55 @@ function setMainTab(tab) {
   } else if (tab === "cronograma") {
     renderGantt();
   }
+}
+
+function toggleRowMenu(e, idReq) {
+  if (e) e.stopPropagation();
+  const targetId = `row-menu-${idReq}`;
+  const target = document.getElementById(targetId);
+  const wasOpen = target && target.classList.contains("open");
+  closeAllRowMenus();
+  if (target && !wasOpen) {
+    target.classList.add("open");
+  }
+}
+
+function closeAllRowMenus() {
+  document.querySelectorAll(".row-menu-dropdown.open").forEach(el => el.classList.remove("open"));
+}
+
+function formatShortDateEs(isoStr) {
+  const clean = String(isoStr || "").trim().slice(0, 10);
+  if (!clean || clean === "—") return "—";
+  const parts = clean.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return clean;
+  const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return `${parts[2]} ${months[parts[1] - 1] || ""} ${parts[0]}`;
+}
+
+function getDeliveryComplianceBadge(r) {
+  const isDone = r.Estado === "Terminado" || Number(r.Avance_Pct || 0) >= 100;
+  if (!isDone) return null;
+  const shift = Number(r.Desplazamiento_Dias || 0);
+  if (shift < 0) {
+    return {
+      text: `Anticipada (${shift}d háb.)`,
+      cls: "tag-early",
+      title: `Entregado ${Math.abs(shift)} día(s) hábil(es) antes de lo estimado`
+    };
+  }
+  if (shift === 0) {
+    return {
+      text: "A tiempo",
+      cls: "tag-early",
+      title: "Entregado en la fecha estimada"
+    };
+  }
+  return {
+    text: `+${shift}d después`,
+    cls: "tag-ochre",
+    title: `Entregado ${shift} día(s) hábil(es) después de la fecha estimada`
+  };
 }
 
 function toggleMoreMenu(e) {
@@ -389,14 +440,18 @@ function computeLocalCascade(items) {
       const extHours = Math.max(0, Number(it.Horas_Demora_Externa || 0));
       const extDays = extHours > 0 ? Math.ceil(extHours / effectiveHoursPerDay) : 0;
       if (it.Estado === "Terminado" || Number(it.Avance_Pct || 0) >= 100) {
-        const diasUsados = Math.max(1, Math.ceil((Number(it.Horas_Reales || it.Horas_Est || 8)) / effectiveHoursPerDay));
-        const doneD = addWorkingDays(regD, diasUsados, blocked);
-        const realD = extDays > 0 ? addWorkingDays(doneD, extDays, blocked) : doneD;
+        const diasEst = Math.max(1, Math.ceil((Number(it.Horas_Est || it.Horas_Reales || 8)) / effectiveHoursPerDay));
+        const defaultEstD = addWorkingDays(regD, diasEst, blocked);
+        const estD = it.Fecha_Tentativa ? parseIsoDate(it.Fecha_Tentativa) : defaultEstD;
+        const baseD = it.Fecha_Base ? parseIsoDate(it.Fecha_Base) : estD;
+        const estWithExt = extDays > 0 ? addWorkingDays(estD, extDays, blocked) : estD;
+        const realD = it.Fecha_Real_Entrega ? parseIsoDate(it.Fecha_Real_Entrega) : estWithExt;
+
         it.Fecha_Inicio_Calc = formatIsoDate(regD);
-        it.Fecha_Base = formatIsoDate(doneD);
-        it.Fecha_Tentativa = formatIsoDate(doneD);
-        it.Desplazamiento_Dias = 0;
+        it.Fecha_Base = formatIsoDate(baseD);
+        it.Fecha_Tentativa = formatIsoDate(estD);
         it.Fecha_Real_Entrega = formatIsoDate(realD);
+        it.Desplazamiento_Dias = workingDaysDiff(estWithExt, realD, blocked);
         it.Dias_Desde_Solicitud = Math.max(0, workingDaysDiff(solD, realD));
       }
     });
@@ -631,8 +686,12 @@ function copyExecutiveReport() {
   filteredData.forEach(r => {
     const ext = Number(r.Horas_Demora_Externa || 0) > 0 ? ` (+${r.Horas_Demora_Externa}h demora ext.)` : "";
     const eds = Number(r.Cantidad_Ediciones || 0) > 0 ? ` [${r.Cantidad_Ediciones} ed. · ${formatHoursLabel(r.Horas_Reales)}]` : "";
-    const solStr = r.Fecha_Solicitud ? `Pedido: ${r.Fecha_Solicitud} | ` : "";
-    lines.push(`- [${r.ID_Req}] ${r.Descripcion}${eds}: ${r.Avance_Pct}% (${r.Estado}) | ${solStr}Entrega real: ${r.Fecha_Real_Entrega}${ext}`);
+    const solStr = r.Fecha_Solicitud ? `Pedido: ${formatShortDateEs(r.Fecha_Solicitud)} | ` : "";
+    const badge = getDeliveryComplianceBadge(r);
+    const datePart = badge
+      ? `Entregado: ${formatShortDateEs(r.Fecha_Real_Entrega)} (${badge.text}, est. ${formatShortDateEs(r.Fecha_Tentativa)})`
+      : `Est.: ${formatShortDateEs(r.Fecha_Real_Entrega)}${ext}`;
+    lines.push(`- [${r.ID_Req}] (${getItemCategory(r)}) ${r.Descripcion}${eds}: ${r.Avance_Pct}% (${r.Estado}) | ${solStr}${datePart}`);
   });
 
   navigator.clipboard.writeText(lines.join("\n")).then(() => {
@@ -860,12 +919,78 @@ function applyFilters() {
   const navBadge = document.getElementById("navCountBadge");
   if (navBadge) navBadge.textContent = String(filteredData.length);
   updateMoreFiltersButton();
+  renderActiveFilterChips();
 
   renderExecutiveKpis();
   renderProjectStrip();
   renderCharts();
   renderActiveView();
   if (activeMainTab === "cronograma") renderGantt();
+}
+
+function renderActiveFilterChips() {
+  const bar = document.getElementById("activeFilterChips");
+  if (!bar) return;
+  const chips = [];
+  if (selectedCategory !== "TODOS") {
+    chips.push({ label: `Tipo: ${selectedCategory}`, clear: "setCategoryFilter('TODOS')" });
+  }
+  if (selectedProject !== "TODOS") {
+    chips.push({ label: `Proyecto: ${selectedProject}`, clear: "onProjectSelectChange('TODOS')" });
+  }
+  const est = document.getElementById("fEstado").value;
+  if (est !== "TODOS") {
+    chips.push({ label: `Estado: ${est}`, clear: "document.getElementById('fEstado').value='TODOS'; applyFilters();" });
+  }
+  const resp = document.getElementById("fResponsable").value;
+  if (resp !== "TODOS") {
+    chips.push({ label: `Colaborador: ${resp}`, clear: "document.getElementById('fResponsable').value='TODOS'; applyFilters();" });
+  }
+  const sol = document.getElementById("fSolicitante").value;
+  if (sol !== "TODOS") {
+    chips.push({ label: `Solicitante: ${sol}`, clear: "document.getElementById('fSolicitante').value='TODOS'; applyFilters();" });
+  }
+  const prio = document.getElementById("fPrioridad").value;
+  if (prio !== "TODOS") {
+    chips.push({ label: `Prioridad: ${prio}`, clear: "document.getElementById('fPrioridad').value='TODOS'; applyFilters();" });
+  }
+  if (selectedScope !== "TODOS") {
+    chips.push({ label: selectedScope === "Sí" ? "Alcance: Cambios" : "Alcance: Plan Base", clear: "setScopeFilter('TODOS')" });
+  }
+  const q = (document.getElementById("searchInput").value || "").trim();
+  if (q) {
+    chips.push({ label: `Búsqueda: "${q}"`, clear: "document.getElementById('searchInput').value=''; applyFilters();" });
+  }
+
+  if (!chips.length) {
+    bar.style.display = "none";
+    bar.innerHTML = "";
+    return;
+  }
+  bar.style.display = "flex";
+  bar.innerHTML = chips.map(c => `
+    <button type="button" class="filter-chip" onclick="${c.clear}" title="Quitar filtro">
+      <span>${escapeHtml(c.label)}</span>
+      <span aria-hidden="true">×</span>
+    </button>
+  `).join("");
+}
+
+function kpiQuickNavigate(mode) {
+  resetFilters();
+  if (mode === "active") {
+    document.getElementById("fEstado").value = "En Desarrollo";
+    applyFilters();
+    setMainTab("entregables");
+  } else if (mode === "done") {
+    document.getElementById("fEstado").value = "Terminado";
+    applyFilters();
+    setMainTab("entregables");
+  } else if (mode === "cronograma") {
+    setMainTab("cronograma");
+  } else {
+    setMainTab("entregables");
+  }
 }
 
 function renderExecutiveKpis() {
@@ -876,6 +1001,7 @@ function renderExecutiveKpis() {
   let weighted = 0;
   let activeCount = 0;
   let doneCount = 0;
+  let earlyOrOnTimeCount = 0;
   let extDelayCount = 0;
   let extDelayHours = 0;
   let maxActiveDate = "";
@@ -890,8 +1016,10 @@ function renderExecutiveKpis() {
 
     totEst += hEst;
     weighted += hEst * (pct / 100);
-    if (isDone) doneCount++;
-    else {
+    if (isDone) {
+      doneCount++;
+      if (Number(r.Desplazamiento_Dias || 0) <= 0) earlyOrOnTimeCount++;
+    } else {
       activeCount++;
       if (fReal && fReal > maxActiveDate) maxActiveDate = fReal;
     }
@@ -908,25 +1036,25 @@ function renderExecutiveKpis() {
   const targetDate = maxActiveDate || maxAnyDate || "—";
 
   grid.innerHTML = `
-    <article class="kpi-card">
+    <article class="kpi-card clickable" onclick="kpiQuickNavigate('all')" title="Ver todos los entregables">
       <span class="kpi-label">Avance General Ponderado</span>
       <span class="kpi-value tabular" style="color:var(--accent-primary);">${globalPct.toFixed(1)}%</span>
-      <span class="kpi-meta">${projCount} en proyectos · ${reqCount} requerimientos (${formatHoursLabel(totEst)})</span>
+      <span class="kpi-meta">${projCount} proyectos · ${reqCount} requerimientos (${formatHoursLabel(totEst)})</span>
     </article>
-    <article class="kpi-card">
+    <article class="kpi-card clickable" onclick="kpiQuickNavigate('active')" title="Ver entregables en curso">
       <span class="kpi-label">Entregables en Curso</span>
       <span class="kpi-value tabular">${activeCount}</span>
-      <span class="kpi-meta" style="color:var(--tone-sage); font-weight:600;">${doneCount} terminados</span>
+      <span class="kpi-meta" style="color:var(--tone-sage); font-weight:600;">${doneCount} terminados (${earlyOrOnTimeCount} a tiempo/antes)</span>
     </article>
-    <article class="kpi-card">
+    <article class="kpi-card clickable" onclick="kpiQuickNavigate('all')" title="Revisar entregables con demora">
       <span class="kpi-label">Con Demora Externa</span>
       <span class="kpi-value tabular" style="color:${extDelayCount > 0 ? "var(--tone-ochre)" : "var(--ink-primary)"};">${extDelayCount}</span>
       <span class="kpi-meta">${extDelayHours > 0 ? `+${extDelayHours}h acumuladas por terceros` : "Sin bloqueos externos"}</span>
     </article>
-    <article class="kpi-card">
-      <span class="kpi-label">Cierre Real Estimado</span>
-      <span class="kpi-value tabular">${escapeHtml(targetDate)}</span>
-      <span class="kpi-meta">${activeCount > 0 ? "Según cola activa y festivos" : "Todo entregado"}</span>
+    <article class="kpi-card clickable" onclick="kpiQuickNavigate('cronograma')" title="Abrir línea de tiempo y vacaciones">
+      <span class="kpi-label">Cierre Estimado</span>
+      <span class="kpi-value tabular" style="font-size:1.4rem;">${escapeHtml(formatShortDateEs(targetDate))}</span>
+      <span class="kpi-meta">${activeCount > 0 ? "Según cola activa, festivos y vacaciones" : "Todo entregado"}</span>
     </article>
   `;
 }
@@ -1130,8 +1258,8 @@ function createProjectCapsule({ key, title, pct, hours, extraHours, extDelay, ed
         ${extBadge}
         ${edBadge}
       </div>
-      <div class="project-delivery tabular">
-        <span>Entrega real est.: <strong>${escapeHtml(maxDate || "—")}</strong></span>
+      <div class="project-delivery tabular" title="${escapeHtml(maxDate || "")}">
+        <span>Entrega est.: <strong>${escapeHtml(formatShortDateEs(maxDate))}</strong></span>
       </div>
     </div>
   `;
@@ -1409,23 +1537,42 @@ function renderTable() {
       : "";
 
     const shift = Number(r.Desplazamiento_Dias || 0);
-    const fTent = escapeHtml(r.Fecha_Tentativa || "—");
-    const fReal = escapeHtml(r.Fecha_Real_Entrega || r.Fecha_Tentativa || "—");
+    const fTentIso = r.Fecha_Tentativa || "";
+    const fRealIso = r.Fecha_Real_Entrega || fTentIso;
+    const fTentPretty = escapeHtml(formatShortDateEs(fTentIso));
+    const fRealPretty = escapeHtml(formatShortDateEs(fRealIso));
     const overrun = Math.round((Number(r.Horas_Reales || 0) - Number(r.Horas_Est || 0)) * 10) / 10;
+    const isDone = r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100;
+    const compliance = getDeliveryComplianceBadge(r);
 
-    let metaLines = "";
-    if (r.Estado === "Terminado" || Number(r.Avance_Pct) >= 100) {
-      metaLines = `<span style="color:var(--tone-sage);">Entregado</span>`;
+    let deliveryBlockHtml = "";
+    if (isDone) {
+      const badgeHtml = compliance
+        ? `<span class="pill-tag ${compliance.cls} tabular" title="${escapeHtml(compliance.title)}">${escapeHtml(compliance.text)}</span>`
+        : "";
+      deliveryBlockHtml = `
+        <span class="delivery-label">Entregado</span>
+        <span class="delivery-date tabular" title="${escapeHtml(fRealIso)}">${fRealPretty}</span>
+        <div class="delivery-est-ref tabular" title="Fecha estimada original: ${escapeHtml(fTentIso)}">Est: ${fTentPretty}</div>
+        <div class="delivery-meta">${badgeHtml}</div>
+      `;
     } else {
+      let metaLines = "";
       if (extHours > 0) {
-        metaLines += `<span><span class="pill-tag tag-ochre tabular">+${extHours}h ext.</span> Ing: ${fTent}</span>`;
+        metaLines += `<span><span class="pill-tag tag-ochre tabular">+${extHours}h ext.</span> Ing: ${fTentPretty}</span>`;
       } else {
         const effH = simHoursPerDay * simCapacityMult;
         const hRest = Math.max(0, Number(r.Horas_Est || 0) * (1 - Number(r.Avance_Pct || 0) / 100));
-        metaLines += `<span>${Math.max(1, Math.ceil(hRest / effH))}d háb. rest.</span>`;
+        metaLines += `<span>${Math.max(1, Math.ceil(hRest / effH))}d háb. restantes</span>`;
       }
       if (shift > 0) metaLines += `<span><span class="pill-tag tag-extra tabular">+${shift}d cola</span></span>`;
       else if (shift < 0) metaLines += `<span><span class="pill-tag tag-early tabular">${shift}d cola</span></span>`;
+
+      deliveryBlockHtml = `
+        <span class="delivery-label">${extHours > 0 ? "Est. con demora" : "Estimada"}</span>
+        <span class="delivery-date tabular" title="${escapeHtml(fRealIso)}">${fRealPretty}</span>
+        <div class="delivery-meta">${metaLines}</div>
+      `;
     }
 
     const overrunHtml = overrun > 0
@@ -1452,8 +1599,8 @@ function renderTable() {
           <span class="avatar-mini">${escapeHtml(getInitials(r.Responsable))}</span>
           <span>${respFirst} · <em>${solFull}</em></span>
         </div>
-        <div class="req-date-line tabular">
-          <span>Pedido: <strong>${solDate}</strong></span>
+        <div class="req-date-line tabular" title="Solicitado el ${solDate}">
+          <span>Pedido: <strong>${escapeHtml(formatShortDateEs(r.Fecha_Solicitud || r.Fecha_Registro))}</strong></span>
           ${solAgeBadge}
         </div>
       </td>
@@ -1502,19 +1649,25 @@ function renderTable() {
           </div>
         </div>
       </td>
-      <td data-label="Entrega Real y Horas">
-        <span class="delivery-date tabular">${fReal}</span>
-        <div class="delivery-meta">${metaLines}</div>
+      <td data-label="Entrega (Est. / Real)">
+        ${deliveryBlockHtml}
         <div class="hours-line tabular">
           <strong>${formatHoursLabel(r.Horas_Reales)}</strong> / ${formatHoursLabel(r.Horas_Est)} ${overrunHtml}
         </div>
       </td>
       <td data-label="Acciones" class="actions-col-cell">
-        <div class="row-actions-col">
-          <button class="icon-btn micro-btn" onclick="openMicroModal('${idArg}')">+ Ediciones</button>
-          <button class="icon-btn ext-btn" onclick="openDelayModal('${idArg}')">+ Demora</button>
-          <button class="icon-btn" onclick="openEditDrawer('${idArg}')">Editar</button>
-          <button class="icon-btn danger" onclick="deleteProc('${idArg}')">Eliminar</button>
+        <div class="row-actions-clean">
+          <button type="button" class="icon-btn" style="flex:1;" onclick="openEditDrawer('${idArg}')">Editar</button>
+          <div class="row-menu-wrap">
+            <button type="button" class="icon-btn row-menu-btn" aria-label="Más acciones ${idSafe}" onclick="toggleRowMenu(event, '${idArg}')">⋯</button>
+            <div class="row-menu-dropdown" id="row-menu-${idSafe}">
+              ${!isDone ? `<button type="button" class="row-menu-item success" onclick="closeAllRowMenus(); handleInlineAvanceChange('${idArg}', 100)">✓ Marcar Terminado hoy</button>` : ""}
+              <button type="button" class="row-menu-item" onclick="closeAllRowMenus(); openMicroModal('${idArg}')">＋ Sumar ediciones / tiempo</button>
+              <button type="button" class="row-menu-item" onclick="closeAllRowMenus(); openDelayModal('${idArg}')">⏱ Registrar demora externa</button>
+              <div class="dropdown-sep"></div>
+              <button type="button" class="row-menu-item danger" onclick="closeAllRowMenus(); deleteProc('${idArg}')">Eliminar procedimiento</button>
+            </div>
+          </div>
         </div>
       </td>
     `;
@@ -1668,18 +1821,25 @@ function renderKanban() {
         ? `<span class="pill-tag tag-cat-req">Req.</span>`
         : `<span class="pill-tag tag-cat-proj">Proy.</span>`;
 
+      const compliance = getDeliveryComplianceBadge(r);
+      const complianceHtml = compliance
+        ? `<span class="pill-tag ${compliance.cls} tabular">${escapeHtml(compliance.text)}</span>`
+        : "";
+      const dateLbl = compliance ? "Entregado" : "Estimada";
+
       return `<div class="kanban-card">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
           <span class="id-cat-row"><span class="id-badge tabular">${idSafe}</span>${catBadge}</span>
           <span class="pill-tag prio-${prioDigit}">${escapeHtml(prioStr)}</span>
         </div>
-        <div class="proc-title" style="font-size:0.82rem;">${escapeHtml(r.Descripcion)}</div>
+        <div class="proc-title" style="font-size:0.86rem;">${escapeHtml(r.Descripcion)}</div>
         <div class="proc-sub">${escapeHtml(r.Proyecto)} · ${escapeHtml(r.Responsable)}</div>
-        <div class="proc-sub tabular">Pedido: <strong>${escapeHtml(r.Fecha_Solicitud || r.Fecha_Registro)}</strong></div>
+        <div class="proc-sub tabular">Pedido: <strong>${escapeHtml(formatShortDateEs(r.Fecha_Solicitud || r.Fecha_Registro))}</strong></div>
+        ${complianceHtml}
         ${eds > 0 ? `<span class="pill-tag tag-early tabular">${eds} ed. · ${formatHoursLabel(r.Horas_Reales)}</span>` : ""}
         ${ext > 0 ? `<span class="pill-tag tag-ochre tabular">+${ext}h demora externa</span>` : ""}
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.74rem;">
-          <span class="tabular">Entrega: <strong>${escapeHtml(r.Fecha_Real_Entrega)}</strong></span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.78rem;">
+          <span class="tabular">${dateLbl}: <strong>${escapeHtml(formatShortDateEs(r.Fecha_Real_Entrega))}</strong></span>
           <span class="tabular"><strong>${Number(r.Avance_Pct || 0)}%</strong></span>
         </div>
         ${actionButtons}
@@ -2024,16 +2184,31 @@ function onDrawerCategoriaChange() {
   }
 }
 
+function syncDrawerFechaRealVisibility() {
+  const wrap = document.getElementById("fechaRealFieldWrap");
+  const est = document.getElementById("inpEstado").value;
+  const pct = Number(document.getElementById("inpAvance").value || 0);
+  const inpReal = document.getElementById("inpFechaRealEntrega");
+  if (!wrap) return;
+  const isDone = est === "Terminado" || pct >= 100;
+  wrap.style.display = isDone ? "flex" : "none";
+  if (isDone && inpReal && !inpReal.value) {
+    inpReal.value = todayIsoString();
+  }
+}
+
 function onDrawerEstadoChange() {
   const est = document.getElementById("inpEstado").value;
   const currentPct = document.getElementById("inpAvance").value;
   document.getElementById("inpAvance").value = computePctFromEstado(est, currentPct);
+  syncDrawerFechaRealVisibility();
 }
 
 function onDrawerAvanceChange() {
   const pct = document.getElementById("inpAvance").value;
   const currentEst = document.getElementById("inpEstado").value;
   document.getElementById("inpEstado").value = computeEstadoFromPct(pct, currentEst);
+  syncDrawerFechaRealVisibility();
 }
 
 function todayIsoString() {
@@ -2068,6 +2243,8 @@ function openDrawer(req = null) {
     document.getElementById("inpHorasReales").value = req.Horas_Reales;
     document.getElementById("inpEstado").value = req.Estado;
     document.getElementById("inpAvance").value = req.Avance_Pct;
+    document.getElementById("inpFechaRealEntrega").value = (req.Estado === "Terminado" && req.Fecha_Real_Entrega) ? req.Fecha_Real_Entrega.slice(0, 10) : "";
+    syncDrawerFechaRealVisibility();
     document.getElementById("inpHorasExt").value = Number(req.Horas_Demora_Externa || 0);
     document.getElementById("inpComentariosExt").value = req.Comentarios_Externos || "";
     document.getElementById("inpTipo").value = req.Tipo;
@@ -2088,6 +2265,8 @@ function openDrawer(req = null) {
     document.getElementById("inpPrioridad").value = "3 - Normal";
     document.getElementById("inpEstado").value = "Pendiente";
     document.getElementById("inpAvance").value = 0;
+    document.getElementById("inpFechaRealEntrega").value = "";
+    syncDrawerFechaRealVisibility();
     document.getElementById("inpHorasExt").value = 0;
     if (advDetails) advDetails.open = false;
   }
@@ -2130,6 +2309,7 @@ async function submitDrawerForm(e) {
     Horas_Reales: Number(document.getElementById("inpHorasReales").value || 0),
     Estado: document.getElementById("inpEstado").value,
     Avance_Pct: Number(document.getElementById("inpAvance").value || 0),
+    Fecha_Real_Entrega: document.getElementById("inpFechaRealEntrega").value || null,
     Horas_Demora_Externa: Number(document.getElementById("inpHorasExt").value || 0),
     Comentarios_Externos: document.getElementById("inpComentariosExt").value,
     Tipo: document.getElementById("inpTipo").value,
@@ -2556,6 +2736,7 @@ async function deleteVacacion(idVac) {
 document.addEventListener("click", e => {
   const wrap = document.querySelector(".more-menu-wrap");
   if (wrap && !wrap.contains(e.target)) closeMoreMenu();
+  if (!e.target.closest(".row-menu-wrap")) closeAllRowMenus();
 });
 
 window.addEventListener("keydown", e => {
@@ -2565,6 +2746,7 @@ window.addEventListener("keydown", e => {
     document.getElementById("searchInput").focus();
   } else if (e.key === "Escape") {
     closeMoreMenu();
+    closeAllRowMenus();
     closeVacModal();
     closeAuthModal();
     closeMicroModal();

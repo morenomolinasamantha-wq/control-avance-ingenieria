@@ -130,6 +130,7 @@ class RequerimientoInput(BaseModel):
     Aprobado: str = "Pendiente"
     Fecha_Solicitud: Optional[str] = None
     Fecha_Registro: Optional[str] = None
+    Fecha_Real_Entrega: Optional[str] = None
     Prioridad: str = "3 - Normal"
     Horas_Demora_Externa: float = Field(default=0, ge=0)
     Comentarios_Externos: Optional[str] = ""
@@ -151,6 +152,7 @@ class ProgressPatchInput(BaseModel):
     Estado: Optional[str] = None
     Avance_Pct: Optional[float] = Field(default=None, ge=0, le=100)
     Horas_Reales: Optional[float] = Field(default=None, ge=0)
+    Fecha_Real_Entrega: Optional[str] = None
 
 
 class PriorityPatchInput(BaseModel):
@@ -429,13 +431,22 @@ def compute_cascade_schedule(
             ext_hours = max(0.0, float(it.get("Horas_Demora_Externa") or 0))
             ext_days = math.ceil(ext_hours / HORAS_POR_DIA) if ext_hours > 0 else 0
             if str(it.get("Estado", "")).strip() == "Terminado" or float(it.get("Avance_Pct", 0)) >= 100:
-                dias_usados = max(1, math.ceil(float(it.get("Horas_Reales") or it.get("Horas_Est") or 8) / HORAS_POR_DIA))
-                done_d = add_working_days(reg_d, dias_usados, blocked)
-                real_d = add_working_days(done_d, ext_days, blocked) if ext_days > 0 else done_d
-                it["Fecha_Base"] = done_d.isoformat()
-                it["Fecha_Tentativa"] = done_d.isoformat()
-                it["Desplazamiento_Dias"] = 0
+                dias_est = max(1, math.ceil(float(it.get("Horas_Est") or it.get("Horas_Reales") or 8) / HORAS_POR_DIA))
+                default_est_d = add_working_days(reg_d, dias_est, blocked)
+                existing_tent = str(it.get("Fecha_Tentativa") or "").strip()[:10]
+                est_d = safe_iso_date(existing_tent, default_est_d) if existing_tent else default_est_d
+                existing_base = str(it.get("Fecha_Base") or "").strip()[:10]
+                base_d = safe_iso_date(existing_base, est_d) if existing_base else est_d
+
+                est_with_ext = add_working_days(est_d, ext_days, blocked) if ext_days > 0 else est_d
+                existing_real = str(it.get("Fecha_Real_Entrega") or "").strip()[:10]
+                real_d = safe_iso_date(existing_real, est_with_ext) if existing_real else est_with_ext
+
+                it["Fecha_Base"] = base_d.isoformat()
+                it["Fecha_Tentativa"] = est_d.isoformat()
                 it["Fecha_Real_Entrega"] = real_d.isoformat()
+                # Negativo = entrega anticipada (-Xd hábiles), 0 = a tiempo, positivo = después de lo estimado
+                it["Desplazamiento_Dias"] = working_days_diff(est_with_ext, real_d, blocked)
                 it["Dias_Desde_Solicitud"] = max(0, working_days_diff(sol_d, real_d))
 
         active_items = [
@@ -844,6 +855,10 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
             payload.Categoria, payload.Proyecto, payload.Fase_Etapa
         )
 
+        fecha_real_in = (payload.Fecha_Real_Entrega or "").strip()[:10]
+        if estado_final == "Terminado" and not fecha_real_in:
+            fecha_real_in = date.today().isoformat()
+
         items.append({
             "ID_Req": new_id,
             "Categoria": cat_final,
@@ -862,6 +877,7 @@ def create_requerimiento(payload: RequerimientoInput, _auth: bool = Depends(veri
             "Aprobado": payload.Aprobado.strip(),
             "Fecha_Solicitud": fecha_sol,
             "Fecha_Registro": fecha_reg,
+            "Fecha_Real_Entrega": fecha_real_in if estado_final == "Terminado" else "",
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
             "Comentarios_Externos": (payload.Comentarios_Externos or "").strip(),
@@ -912,6 +928,19 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
             payload.Categoria, payload.Proyecto, payload.Fase_Etapa
         )
 
+        was_done = str(target.get("Estado") or "").strip() == "Terminado" or float(target.get("Avance_Pct") or 0) >= 100
+        now_done = estado_final == "Terminado" or avance_final >= 100
+        fecha_real_in = (payload.Fecha_Real_Entrega or "").strip()[:10]
+        if now_done:
+            if fecha_real_in:
+                fecha_real_final = fecha_real_in
+            elif not was_done:
+                fecha_real_final = date.today().isoformat()
+            else:
+                fecha_real_final = str(target.get("Fecha_Real_Entrega") or date.today().isoformat())[:10]
+        else:
+            fecha_real_final = ""
+
         target.update({
             "Categoria": cat_final,
             "Proyecto": proy_final,
@@ -929,6 +958,7 @@ def update_requerimiento(id_req: str, payload: RequerimientoInput, _auth: bool =
             "Aprobado": payload.Aprobado.strip(),
             "Fecha_Solicitud": fecha_sol,
             "Fecha_Registro": fecha_reg,
+            "Fecha_Real_Entrega": fecha_real_final,
             "Prioridad": payload.Prioridad.strip(),
             "Horas_Demora_Externa": max(0.0, float(payload.Horas_Demora_Externa or 0)),
             "Comentarios_Externos": (payload.Comentarios_Externos or "").strip(),
@@ -1018,10 +1048,21 @@ def patch_progreso_requerimiento(id_req: str, payload: ProgressPatchInput, _auth
             nuevo_estado = payload.Estado if payload.Estado is not None else estado_actual
             nuevo_avance = payload.Avance_Pct if payload.Avance_Pct is not None else avance_actual
 
+        was_done = str(target.get("Estado") or "").strip() == "Terminado" or float(target.get("Avance_Pct") or 0) >= 100
+        now_done = nuevo_estado == "Terminado" or nuevo_avance >= 100
+
         target["Estado"] = nuevo_estado
         target["Avance_Pct"] = nuevo_avance
         if payload.Horas_Reales is not None:
             target["Horas_Reales"] = round(float(payload.Horas_Reales), 2)
+
+        if now_done:
+            if payload.Fecha_Real_Entrega:
+                target["Fecha_Real_Entrega"] = payload.Fecha_Real_Entrega.strip()[:10]
+            elif not was_done:
+                target["Fecha_Real_Entrega"] = date.today().isoformat()
+        else:
+            target["Fecha_Real_Entrega"] = ""
 
         compute_cascade_schedule(items, vacaciones=read_vacaciones_from_wb(wb))
         write_items_to_ws(ws, items)

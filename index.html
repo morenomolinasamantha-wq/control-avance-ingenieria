@@ -210,6 +210,9 @@
             <button type="button" class="seg-btn" data-scope="Sí" onclick="setScopeFilter('Sí')">Cambios</button>
           </div>
         </div>
+
+        <!-- CHIPS REMOVIBLES DE FILTROS ACTIVOS -->
+        <div class="active-filters-bar" id="activeFilterChips" style="display:none;"></div>
       </section>
 
       <!-- MESA DE TRABAJO: LISTA / KANBAN -->
@@ -247,7 +250,7 @@
                 <th>Procedimiento</th>
                 <th>Prioridad y Estado</th>
                 <th>Avance %</th>
-                <th>Entrega Real y Horas</th>
+                <th>Entrega (Est. / Real)</th>
                 <th class="actions-col-cell">Acciones</th>
               </tr>
             </thead>
@@ -635,6 +638,11 @@
               <div class="field">
                 <label for="inpAvance">% Avance (0 a 100%)</label>
                 <input type="number" id="inpAvance" min="0" max="100" step="1" required value="0" oninput="onDrawerAvanceChange()" />
+              </div>
+
+              <div class="field span-2" id="fechaRealFieldWrap" style="display:none;">
+                <label for="inpFechaRealEntrega">Fecha Real en que se entregó (para calcular si fue anticipada o a tiempo)</label>
+                <input type="date" id="inpFechaRealEntrega" />
               </div>
 
               <div class="field span-2">
